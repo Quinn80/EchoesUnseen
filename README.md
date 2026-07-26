@@ -23,6 +23,16 @@ Echoes Unseen runs as a transparent, click-through overlay on top of Guild Wars 
 
 ---
 
+## Download & Run
+
+**[⬇ Download the latest release — `EchoesUnseen-B1.1.exe`](https://github.com/Quinn80/EchoesUnseen/releases/latest)**
+
+It's **self-contained — no .NET install needed.** Download it, then run it. Windows 10/11 (64-bit).
+
+> On first launch, Windows SmartScreen may warn "unknown publisher" (it's an unsigned indie build). Click **More info → Run anyway**. On first run it also downloads six voices automatically.
+
+---
+
 ## What it does
 
 - **Voice-first, screen-reader native** — full NVDA support; anything on screen can be spoken, including whatever the mouse rests on.
