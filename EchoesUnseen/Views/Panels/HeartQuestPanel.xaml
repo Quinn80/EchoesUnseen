@@ -1,0 +1,70 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.HeartQuestPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="520" d:DesignWidth="560">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Current map header -->
+            <RowDefinition Height="Auto"/>  <!-- Action buttons -->
+            <RowDefinition Height="Auto"/>  <!-- Status line -->
+            <RowDefinition Height="*"/>     <!-- Hearts list -->
+        </Grid.RowDefinitions>
+
+        <!-- Current map header -->
+        <Border Grid.Row="0"
+                Background="#22FF1A8A"
+                BorderBrush="{DynamicResource PrimaryBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,10"
+                Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock x:Name="MapName"
+                           Text="Waiting for Guild Wars 2..."
+                           Foreground="White" FontWeight="SemiBold"/>
+                <TextBlock x:Name="HeartSummary"
+                           Text=""
+                           Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Action buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Style="{StaticResource PrimaryButton}"
+                    Content="🔊 Read All Hearts"
+                    Click="ReadAll_Click"/>
+            <Button Style="{StaticResource SecondaryButton}"
+                    Margin="8,0,0,0"
+                    Content="🎯 Nearest Incomplete"
+                    Click="ReadNearest_Click"
+                    ToolTip="Read the nearest heart you haven't completed"/>
+            <Button Style="{StaticResource SecondaryButton}"
+                    Margin="8,0,0,0"
+                    Content="⟳"
+                    Click="Refresh_Click"
+                    ToolTip="Refresh from API"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="2"
+                   x:Name="StatusText"
+                   Foreground="{DynamicResource MutedBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8"/>
+
+        <!-- Hearts list -->
+        <Border Grid.Row="3"
+                Background="#22222B"
+                BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="HeartsList"/>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

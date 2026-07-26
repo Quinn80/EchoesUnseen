@@ -1,0 +1,76 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.ScreenReaderPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="520" d:DesignWidth="560">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Privacy banner -->
+            <RowDefinition Height="Auto"/>  <!-- Action buttons -->
+            <RowDefinition Height="Auto"/>  <!-- Status line -->
+            <RowDefinition Height="*"/>     <!-- Last read display -->
+        </Grid.RowDefinitions>
+
+        <!-- Privacy banner: green border, clear message that capture is local -->
+        <Border Grid.Row="0"
+                Background="#114ADE80"
+                BorderBrush="#FF4ADE80"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,10"
+                Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🔒" VerticalAlignment="Center"/>
+                <TextBlock Foreground="White" VerticalAlignment="Center"
+                           Margin="8,0,0,0" TextWrapping="Wrap">
+                    100% local OCR — nothing leaves your computer.
+                    Powered by Windows built-in OCR.
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Action buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button Style="{StaticResource PrimaryButton}"
+                    Content="🎯 Select Area"
+                    Click="SelectArea_Click"
+                    ToolTip="Drag a rectangle over the text you want read"/>
+            <Button Style="{StaticResource SecondaryButton}"
+                    Margin="8,0,0,0"
+                    Content="🔊 Read Again"
+                    Click="ReadAgain_Click"
+                    IsEnabled="False"
+                    x:Name="ReadAgainBtn"/>
+            <Button Style="{StaticResource SecondaryButton}"
+                    Margin="8,0,0,0"
+                    Content="🗑 Clear"
+                    Click="Clear_Click"/>
+        </StackPanel>
+
+        <!-- Status line -->
+        <TextBlock Grid.Row="2"
+                   x:Name="StatusText"
+                   Foreground="{DynamicResource MutedBrush}"
+                   TextWrapping="Wrap"
+                   Text="Click Select Area to read text from anywhere on your screen."
+                   Margin="0,0,0,12"/>
+
+        <!-- Last-read display -->
+        <Border Grid.Row="3"
+                Background="#22222B"
+                BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="LastReadText"
+                           Foreground="White"
+                           TextWrapping="Wrap"
+                           Text="(No text captured yet.)"/>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

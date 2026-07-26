@@ -1,0 +1,67 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.AccountSearchPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="520" d:DesignWidth="560">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Search row -->
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="SearchBox"
+                     Grid.Column="0"
+                     Style="{StaticResource InputBox}"
+                     KeyUp="SearchBox_KeyUp"/>
+            <Button Grid.Column="1"
+                    Margin="8,0,0,0"
+                    Style="{StaticResource PrimaryButton}"
+                    Content="🔊 Read Results"
+                    Click="ReadResults_Click"/>
+            <Button Grid.Column="2"
+                    Margin="8,0,0,0"
+                    Style="{StaticResource SecondaryButton}"
+                    Content="⟳"
+                    Click="Refresh_Click"
+                    ToolTip="Reload account data from API"/>
+        </Grid>
+
+        <TextBlock Grid.Row="1"
+                   x:Name="StatusText"
+                   Foreground="{DynamicResource MutedBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8"
+                   Text="Type to search your bank, inventory, materials, and wallet."/>
+
+        <!-- Result count -->
+        <TextBlock Grid.Row="2"
+                   x:Name="ResultCount"
+                   Foreground="{DynamicResource PrimaryBrush}"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,8"/>
+
+        <!-- Results list -->
+        <Border Grid.Row="3"
+                Background="#22222B"
+                BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="ResultsList"/>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

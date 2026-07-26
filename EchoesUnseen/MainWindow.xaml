@@ -1,0 +1,33 @@
+<Window x:Class="EchoesUnseen.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:EchoesUnseen.Views"
+        Title="Echoes Unseen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowState="Maximized"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Focusable="False"
+        AutomationProperties.Name="Echoes Unseen accessibility overlay for Guild Wars 2"
+        AutomationProperties.HelpText="Use Tab and Shift+Tab to move between buttons. Press Enter or Space to activate. Press Escape to close any open panel.">
+
+    <Grid x:Name="RootGrid">
+        <!-- The Radial HUD (always present, fades in/out based on hover/activity) -->
+        <views:RadialHud x:Name="RadialHud"
+                         AutomationProperties.Name="Radial HUD with 12 panel buttons"/>
+
+        <!-- PanelHost lives here — an open panel is injected into this layer at runtime -->
+        <ContentControl x:Name="PanelHost" IsHitTestVisible="True"
+                        AutomationProperties.Name="Open panel"/>
+
+        <!-- Closed panels are parked here rather than thrown away, so features
+             that run in the background (Chat Reader scanning, Trail Navigator
+             sonar, Music Player playback) keep working with their window shut.
+             Collapsed, hit-test off, and never announced. -->
+        <Grid x:Name="BackgroundPanels" Visibility="Collapsed"
+              IsHitTestVisible="False"/>
+    </Grid>
+</Window>

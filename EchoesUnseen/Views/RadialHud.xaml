@@ -1,0 +1,348 @@
+<UserControl x:Class="EchoesUnseen.Views.RadialHud"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="620" d:DesignWidth="620"
+             Background="Transparent">
+
+    <!--
+        CYBERPUNK / MATRIX HUD — native WPF port of the Claude Design build
+        "Guild Wars WoW Radial HUD" (Radial HUD.dc.html).
+
+        The design is authored on a 760px canvas; this renders at a 480px base
+        (factor 0.632), close to the effective on-screen size the old WebView2
+        host produced. Every colour below is an exact conversion of the design's
+        OKLCH value to sRGB hex — none of it eyeballed.
+
+        WPF has no conic-gradient primitive. The design's rotating conic sweeps
+        are reproduced with counter-rotating off-centre RadialGradientBrushes —
+        the same technique the v19 native HUD used, which reads almost
+        identically in motion.
+
+        Procedural layers (glyph ring, data nodes, rising blips, gems, buttons)
+        are built in the code-behind so all ring geometry lives in one place.
+    -->
+
+    <Grid>
+        <Canvas x:Name="HudCanvas" Background="Transparent" IsHitTestVisible="True">
+
+            <Grid x:Name="RingContainer"
+                  Width="480" Height="480"
+                  Canvas.Left="0" Canvas.Top="0"
+                  ClipToBounds="False"
+                  RenderTransformOrigin="0.5,0.5"
+                  Background="#01000000">
+                <Grid.RenderTransform>
+                    <!-- Drives the minimise-to-logo shrink. Separate from the
+                         HudScale LayoutTransform so the two never fight. -->
+                    <ScaleTransform x:Name="MinimiseScale" ScaleX="1" ScaleY="1"/>
+                </Grid.RenderTransform>
+                <!-- ^ CRITICAL, do not remove. This window is per-pixel
+                     transparent, so Windows routes mouse input by the window's
+                     PAINTED ALPHA — not by WPF hit-testing. Fully transparent
+                     pixels are treated as empty glass and every click falls
+                     through to the game underneath, which made most of the
+                     wheel impossible to grab and drag. Alpha 1/255 is
+                     imperceptible but makes the whole ring area hit-solid.
+                     The click-through toggle still decides when input is
+                     passed to the game. -->
+
+
+                <!-- Everything except the centre medallion lives in this group so
+                     the wheel can collapse down to just the logo when the pointer
+                     is away, and unfold again on hover. -->
+                <Grid x:Name="WheelLayers">
+
+                <!-- ═══ LAYER 1: outer pink/blue neon glow ═══════════════════
+                     Design: two blurred radial washes plus a rotating conic
+                     sweep, inset -110px on the 760 canvas (= -69 here).     -->
+                <Grid Width="618" Height="618"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      IsHitTestVisible="False" ClipToBounds="False">
+
+                    <!-- Soft pink wash — neon-pulse (opacity 0.6→1, 5s) -->
+                    <Ellipse x:Name="GlowPink" Width="618" Height="618" Opacity="0.6">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5"
+                                                 RadiusX="0.5" RadiusY="0.5">
+                                <GradientStop Color="#6BFF2EBD" Offset="0.40"/>
+                                <GradientStop Color="#3D247BFF" Offset="0.55"/>
+                                <GradientStop Color="#00247BFF" Offset="0.70"/>
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+
+                    <!-- Rotating sweep A — clockwise, ~22s (design: hud-spin-cw) -->
+                    <Ellipse Width="618" Height="618" Opacity="0.6"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush GradientOrigin="0.72,0.5" Center="0.5,0.5"
+                                                 RadiusX="0.52" RadiusY="0.52">
+                                <GradientStop Color="#FFFF39C3" Offset="0.30"/>
+                                <GradientStop Color="#99FF51F5" Offset="0.44"/>
+                                <GradientStop Color="#443289FF" Offset="0.58"/>
+                                <GradientStop Color="#00007CFF" Offset="0.72"/>
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                        <Ellipse.RenderTransform>
+                            <RotateTransform x:Name="SweepARotate" Angle="0"/>
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+
+                    <!-- Rotating sweep B — counter-clockwise, ~17s -->
+                    <Ellipse Width="618" Height="618" Opacity="0.5"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush GradientOrigin="0.28,0.5" Center="0.5,0.5"
+                                                 RadiusX="0.52" RadiusY="0.52">
+                                <GradientStop Color="#FF3289FF" Offset="0.30"/>
+                                <GradientStop Color="#99007CFF" Offset="0.44"/>
+                                <GradientStop Color="#44FF39C3" Offset="0.58"/>
+                                <GradientStop Color="#00FF39C3" Offset="0.72"/>
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                        <Ellipse.RenderTransform>
+                            <RotateTransform x:Name="SweepBRotate" Angle="0"/>
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                </Grid>
+
+                <!-- ═══ LAYER 2: metallic black ring band ════════════════════ -->
+                <Ellipse Width="480" Height="480" IsHitTestVisible="False">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5"
+                                             RadiusX="0.5" RadiusY="0.5">
+                            <GradientStop Color="#00010001" Offset="0.62"/>
+                            <GradientStop Color="#FF191118" Offset="0.64"/>
+                            <GradientStop Color="#FF0C0912" Offset="0.78"/>
+                            <GradientStop Color="#FF010001" Offset="0.94"/>
+                            <GradientStop Color="#00010001" Offset="1.0"/>
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+
+                <!-- Outer rim: hot-pink neon edge with bloom -->
+                <Ellipse Width="478" Height="478" IsHitTestVisible="False"
+                         Stroke="#FFFF5ACE" StrokeThickness="3">
+                    <Ellipse.Effect>
+                        <DropShadowEffect Color="#FFFF42C2" BlurRadius="26"
+                                          ShadowDepth="0" Opacity="0.55"/>
+                    </Ellipse.Effect>
+                </Ellipse>
+
+                <!-- ═══ LAYER 3: inner well + colour-cycling matrix rain ═════
+                     Tiled DrawingBrush of thin vertical bars, scrolled by an
+                     animated TranslateTransform and clipped to the well.    -->
+                <Grid Width="460" Height="460"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      IsHitTestVisible="False">
+                    <Grid.Clip>
+                        <EllipseGeometry Center="230,230" RadiusX="230" RadiusY="230"/>
+                    </Grid.Clip>
+
+                    <Ellipse Width="460" Height="460">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush Center="0.44,0.34" GradientOrigin="0.44,0.34"
+                                                 RadiusX="0.62" RadiusY="0.62">
+                                <GradientStop Color="#FF09040A" Offset="0.0"/>
+                                <GradientStop Color="#FF010001" Offset="0.55"/>
+                                <GradientStop Color="#FF000000" Offset="1.0"/>
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+
+                    <!-- rain stream 1 — pink, fast (design: 4s) -->
+                    <Rectangle x:Name="RainPink" Width="460" Height="920" Opacity="0.55">
+                        <Rectangle.Fill>
+                            <DrawingBrush TileMode="Tile" Stretch="None"
+                                          Viewport="0,0,13,34" ViewportUnits="Absolute">
+                                <DrawingBrush.Transform>
+                                    <TranslateTransform x:Name="RainPinkShift" Y="0"/>
+                                </DrawingBrush.Transform>
+                                <DrawingBrush.Drawing>
+                                    <GeometryDrawing Brush="#99FF5ACE">
+                                        <GeometryDrawing.Geometry>
+                                            <RectangleGeometry Rect="0,0,1,22"/>
+                                        </GeometryDrawing.Geometry>
+                                    </GeometryDrawing>
+                                </DrawingBrush.Drawing>
+                            </DrawingBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+
+                    <!-- rain stream 2 — blue, slower and sparser (design: 6.5s) -->
+                    <Rectangle x:Name="RainBlue" Width="460" Height="920" Opacity="0.32">
+                        <Rectangle.Fill>
+                            <DrawingBrush TileMode="Tile" Stretch="None"
+                                          Viewport="0,0,19,44" ViewportUnits="Absolute">
+                                <DrawingBrush.Transform>
+                                    <TranslateTransform x:Name="RainBlueShift" Y="0"/>
+                                </DrawingBrush.Transform>
+                                <DrawingBrush.Drawing>
+                                    <GeometryDrawing Brush="#8C4FA0FF">
+                                        <GeometryDrawing.Geometry>
+                                            <RectangleGeometry Rect="0,0,1,28"/>
+                                        </GeometryDrawing.Geometry>
+                                    </GeometryDrawing>
+                                </DrawingBrush.Drawing>
+                            </DrawingBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                </Grid>
+
+                <!-- ═══ LAYER 4: neon code-track edge ════════════════════════ -->
+                <Ellipse x:Name="CodeTrack" Width="386" Height="386"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                         IsHitTestVisible="False"
+                         Stroke="#FFFF5ACE" StrokeThickness="2" Opacity="0.85">
+                    <Ellipse.Effect>
+                        <DropShadowEffect Color="#FF499AFF" BlurRadius="18"
+                                          ShadowDepth="0" Opacity="0.6"/>
+                    </Ellipse.Effect>
+                </Ellipse>
+
+                <!-- ═══ PROCEDURAL LAYERS (built in RadialHud.xaml.cs) ═══════ -->
+
+                <!-- 44 orbiting code glyphs, r = 217 -->
+                <Canvas x:Name="GlyphsCanvas" Width="480" Height="480"
+                        Background="Transparent" IsHitTestVisible="False"/>
+
+                <!-- 12 outer spoke data-nodes, r = 231 -->
+                <Canvas x:Name="NodesCanvas" Width="480" Height="480"
+                        Background="Transparent" IsHitTestVisible="False"/>
+
+                <!-- 24 rising data blips -->
+                <Canvas x:Name="BlipsCanvas" Width="480" Height="480"
+                        Background="Transparent" IsHitTestVisible="False"/>
+
+                </Grid><!-- /WheelLayers -->
+
+                <!-- ═══ LAYER 5: centre terminal medallion ═══════════════════
+                     Deliberately OUTSIDE WheelLayers — this is the logo that
+                     remains visible when the HUD is minimised. -->
+
+                <Grid Width="229" Height="229"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      IsHitTestVisible="False">
+
+                    <!-- rotating scan arc behind the frame -->
+                    <Ellipse Width="229" Height="229" Opacity="0.8"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush GradientOrigin="0.5,0.08" Center="0.5,0.5"
+                                                 RadiusX="0.5" RadiusY="0.5">
+                                <GradientStop Color="#00FF5ACE" Offset="0.60"/>
+                                <GradientStop Color="#CCFF5ACE" Offset="0.86"/>
+                                <GradientStop Color="#00FF5ACE" Offset="1.0"/>
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                        <Ellipse.RenderTransform>
+                            <RotateTransform x:Name="ScanArcRotate" Angle="0"/>
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+
+                    <!-- metallic frame ring -->
+                    <Ellipse x:Name="MedallionFrame" Width="215" Height="215"
+                             Stroke="#FFFF42C2" StrokeThickness="4">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                                <GradientStop Color="#FF140C14" Offset="0.0"/>
+                                <GradientStop Color="#FF010001" Offset="0.6"/>
+                                <GradientStop Color="#FF0C0912" Offset="1.0"/>
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                        <Ellipse.Effect>
+                            <DropShadowEffect Color="#FF409CFF" BlurRadius="22"
+                                              ShadowDepth="0" Opacity="0.5"/>
+                        </Ellipse.Effect>
+                    </Ellipse>
+
+                    <!-- black terminal void: rain + scanline + logo -->
+                    <Grid Width="189" Height="189">
+                        <Grid.Clip>
+                            <EllipseGeometry Center="94.5,94.5" RadiusX="94.5" RadiusY="94.5"/>
+                        </Grid.Clip>
+
+                        <Ellipse Width="189" Height="189">
+                            <Ellipse.Fill>
+                                <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                                    <GradientStop Color="#FF040204" Offset="0.0"/>
+                                    <GradientStop Color="#FF000000" Offset="1.0"/>
+                                </RadialGradientBrush>
+                            </Ellipse.Fill>
+                        </Ellipse>
+
+                        <!-- rain behind the logo -->
+                        <Rectangle x:Name="VoidRain" Width="189" Height="378" Opacity="0.5">
+                            <Rectangle.Fill>
+                                <DrawingBrush TileMode="Tile" Stretch="None"
+                                              Viewport="0,0,15,40" ViewportUnits="Absolute">
+                                    <DrawingBrush.Transform>
+                                        <TranslateTransform x:Name="VoidRainShift" Y="0"/>
+                                    </DrawingBrush.Transform>
+                                    <DrawingBrush.Drawing>
+                                        <GeometryDrawing Brush="#99FF5ACE">
+                                            <GeometryDrawing.Geometry>
+                                                <RectangleGeometry Rect="0,0,1,26"/>
+                                            </GeometryDrawing.Geometry>
+                                        </GeometryDrawing>
+                                    </DrawingBrush.Drawing>
+                                </DrawingBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+
+                        <!-- scanline sweep -->
+                        <Rectangle x:Name="Scanline" Width="189" Height="49"
+                                   VerticalAlignment="Top">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#00FF82E7" Offset="0.0"/>
+                                    <GradientStop Color="#47FF82E7" Offset="0.5"/>
+                                    <GradientStop Color="#00FF82E7" Offset="1.0"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.RenderTransform>
+                                <TranslateTransform x:Name="ScanlineShift" Y="-49"/>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+
+                        <!-- guild / app logo -->
+                        <Image Source="{DynamicResource EchoesUnseenLogo}"
+                               Width="189" Height="189"
+                               Stretch="UniformToFill"
+                               SnapsToDevicePixels="True"
+                               UseLayoutRounding="True"/>
+                    </Grid>
+                </Grid>
+
+                <!-- ═══ LAYER 6 (top): gems + the 12 interactive buttons ═════
+                     Grouped so they collapse away with the rest of the wheel;
+                     kept above the medallion so clicks land on the gems. -->
+                <Grid x:Name="InteractiveLayers">
+                    <Canvas x:Name="GemsCanvas" Width="480" Height="480"
+                            Background="Transparent" IsHitTestVisible="False"/>
+                    <Canvas x:Name="ButtonsCanvas" Width="480" Height="480"
+                            Background="Transparent"/>
+                </Grid>
+            </Grid>
+
+            <!-- Drag-hint label. Repositioned under the ring in code-behind. -->
+            <Border x:Name="DragHint"
+                    Canvas.Left="120" Canvas.Top="490"
+                    Background="#CC000000"
+                    BorderBrush="#66FF5ACE" BorderThickness="1"
+                    CornerRadius="12" Padding="10,4" Opacity="0"
+                    IsHitTestVisible="False">
+                <TextBlock Foreground="{DynamicResource MutedBrush}" FontSize="10">
+                    <Run Text="Hold "/>
+                    <Run FontWeight="Bold" Text="Shift"/>
+                    <Run Text=" + drag to move  •  "/>
+                    <Run FontWeight="Bold" Text="Ctrl+Shift+H"/>
+                    <Run Text=" to reset"/>
+                </TextBlock>
+            </Border>
+        </Canvas>
+    </Grid>
+</UserControl>

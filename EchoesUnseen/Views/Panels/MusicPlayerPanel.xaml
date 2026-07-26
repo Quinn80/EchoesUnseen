@@ -1,0 +1,302 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.MusicPlayerPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="560" d:DesignWidth="580">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Song search + selector -->
+            <RowDefinition Height="Auto"/>  <!-- Current song info -->
+            <RowDefinition Height="*"/>     <!-- The three tabs -->
+        </Grid.RowDefinitions>
+
+        <!-- Song selector -->
+        <Grid Grid.Row="0" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ComboBox x:Name="SongCombo"
+                      Grid.Column="0"
+                      IsEditable="True"
+                      Padding="8,6"
+                      DisplayMemberPath="Name"
+                      SelectionChanged="SongCombo_SelectionChanged"
+                      KeyUp="SongCombo_KeyUp"
+                      ToolTip="Type to search"/>
+            <TextBlock x:Name="SongCount"
+                       Grid.Column="1"
+                       Margin="8,0,0,0"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource MutedBrush}"
+                       FontSize="{DynamicResource GlobalFontSizeSmall}"/>
+        </Grid>
+
+        <!-- Current song info bar -->
+        <Border Grid.Row="1"
+                Background="#22FF1A8A"
+                BorderBrush="{DynamicResource PrimaryBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,8"
+                Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock x:Name="SelectedSongName"
+                               Text="(no song selected)"
+                               Foreground="White" FontWeight="Bold"/>
+                    <TextBlock x:Name="SelectedSongMeta"
+                               Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Tempo: " Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                               VerticalAlignment="Center"/>
+                    <Slider x:Name="TempoSlider" Minimum="0.5" Maximum="2.0" Value="1.0"
+                            Width="100" VerticalAlignment="Center" Margin="4,0"
+                            TickFrequency="0.1"
+                            ValueChanged="TempoSlider_ValueChanged"/>
+                    <TextBlock x:Name="TempoLabel" Text="1.0x" Foreground="White"
+                               VerticalAlignment="Center" MinWidth="36" TextAlignment="Right"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- The three tabs -->
+        <TabControl Grid.Row="2" Background="Transparent" BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                    Foreground="{DynamicResource ForegroundBrush}">
+
+            <!-- Tab 1: Sheet Music -->
+            <TabItem Header="📜 Sheet">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"
+                               TextWrapping="Wrap" Margin="0,0,0,8">
+                        Key mapping: C=1 · D=2 · E=3 · F=4 · G=5 · A=6 · B=7 · high C=8
+                    </TextBlock>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Style="{StaticResource SecondaryButton}"
+                                Content="🔊 Read Notation"
+                                Click="ReadNotation_Click"/>
+                    </StackPanel>
+                    <Border Grid.Row="2"
+                            Background="#22222B"
+                            BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="SheetText"
+                                       FontFamily="Consolas"
+                                       Foreground="White"
+                                       TextWrapping="Wrap"
+                                       Text="(select a song)"/>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 2: Guide Mode -->
+            <TabItem Header="🎯 Guide">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"
+                               TextWrapping="Wrap" Margin="0,0,0,8">
+                        Press the highlighted key when it reaches the line. You press the keys yourself.
+                    </TextBlock>
+                    <Border Grid.Row="1"
+                            Background="#22222B"
+                            BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6">
+                        <Canvas x:Name="GuideCanvas" Background="Transparent" ClipToBounds="True"/>
+                    </Border>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                        <Button x:Name="GuideStartBtn"
+                                Style="{StaticResource PrimaryButton}"
+                                Content="▶ Start Guide"
+                                Click="GuideStart_Click"/>
+                        <Button x:Name="GuideStopBtn"
+                                Style="{StaticResource SecondaryButton}"
+                                Margin="8,0,0,0"
+                                Content="⏹ Stop"
+                                IsEnabled="False"
+                                Click="GuideStop_Click"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 3: Auto-Play -->
+            <TabItem Header="🤖 Auto-Play">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Instructions banner -->
+                    <Border Grid.Row="0"
+                            Background="#11FACC15"
+                            BorderBrush="#FFFACC15"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="10"
+                            Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Foreground="White" FontWeight="SemiBold" Margin="0,0,0,2">
+                                How Auto-Play works
+                            </TextBlock>
+                            <TextBlock Foreground="White" FontSize="{DynamicResource GlobalFontSizeSmall}" TextWrapping="Wrap">
+                                1. Equip your instrument in GW2.
+                                2. Click the GW2 window so it has focus.
+                                3. Come back here and click Start — keys fire into GW2.
+                                Press Stop anytime to interrupt.
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Status line -->
+                    <TextBlock Grid.Row="1"
+                               x:Name="AutoStatus"
+                               Foreground="{DynamicResource MutedBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8"
+                               Text="Idle."/>
+
+                    <!-- Note progress display -->
+                    <Border Grid.Row="2"
+                            Background="#22222B"
+                            BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <WrapPanel x:Name="AutoNoteDisplay"/>
+                        </ScrollViewer>
+                    </Border>
+
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                        <Button x:Name="AutoStartBtn"
+                                Style="{StaticResource PrimaryButton}"
+                                Content="▶ Start Auto-Play"
+                                Click="AutoStart_Click"/>
+                        <Button x:Name="AutoStopBtn"
+                                Style="{StaticResource SecondaryButton}"
+                                Margin="8,0,0,0"
+                                Content="⏹ Stop"
+                                IsEnabled="False"
+                                Click="AutoStop_Click"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="➕ Import">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="8">
+                        <!-- Instructions banner -->
+                        <Border Background="#1133CCFF"
+                                BorderBrush="#FF33CCFF"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="10"
+                                Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Foreground="White" FontWeight="SemiBold" Margin="0,0,0,2"
+                                           AutomationProperties.HeadingLevel="Level2">
+                                    Import a song
+                                </TextBlock>
+                                <TextBlock Foreground="White" FontSize="{DynamicResource GlobalFontSizeSmall}" TextWrapping="Wrap">
+                                    Add your own sheet music. Paste it below — or load it from a file — give it a name, pick an instrument and speed, then Convert and Save. It's added to your personal library and appears in all three modes. Two formats work: number notation (1=C, 2=D, 3=E, 4=F, 5=G, 6=A, 7=B, 8=high C) and ABC letter notation (A to G). Spaces separate notes; use a dash or z for a rest.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="Song name" Foreground="White" Margin="0,0,0,4"/>
+                        <TextBox x:Name="ImportName"
+                                 Style="{StaticResource InputBox}"
+                                 Margin="0,0,0,10"
+                                 AutomationProperties.Name="Song name"/>
+
+                        <TextBlock Text="Instrument" Foreground="White" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="ImportInstrument"
+                                  Margin="0,0,0,10" Padding="8,6"
+                                  SelectedIndex="0"
+                                  AutomationProperties.Name="Instrument">
+                            <ComboBoxItem Content="Lute"/>
+                            <ComboBoxItem Content="Flute"/>
+                            <ComboBoxItem Content="Harp"/>
+                            <ComboBoxItem Content="Horn"/>
+                            <ComboBoxItem Content="Bell"/>
+                            <ComboBoxItem Content="Bass"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Speed (BPM): higher is faster" Foreground="White" Margin="0,0,0,4"/>
+                        <TextBox x:Name="ImportBpm"
+                                 Style="{StaticResource InputBox}"
+                                 Text="100"
+                                 Margin="0,0,0,10"
+                                 AutomationProperties.Name="Beats per minute"
+                                 AutomationProperties.HelpText="A number such as 100. Higher numbers play faster."/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="Notes (numbers 1-8 or letters A-G)" Foreground="White"
+                                       VerticalAlignment="Center"/>
+                            <Button Style="{StaticResource SecondaryButton}"
+                                    Margin="12,0,0,0" Padding="8,2"
+                                    Content="📂 Load from file…"
+                                    Click="ImportFromFile_Click"
+                                    AutomationProperties.Name="Load song notes from a text file"
+                                    AutomationProperties.HelpText="Open a text or ABC file and put its contents into the notes box."/>
+                        </StackPanel>
+                        <TextBox x:Name="ImportNotes"
+                                 Style="{StaticResource InputBox}"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 MinHeight="100"
+                                 MaxHeight="200"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Margin="0,0,0,10"
+                                 AutomationProperties.Name="Song notes"
+                                 AutomationProperties.HelpText="Paste number notation like 1 2 3 4 5, or ABC letters like C D E F G."/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Button Style="{StaticResource PrimaryButton}"
+                                    Content="💾 Convert &amp; Save"
+                                    Click="ImportSave_Click"
+                                    AutomationProperties.Name="Convert and save song"
+                                    AutomationProperties.HelpText="Converts the notes and saves the song to your personal library."/>
+                            <Button Style="{StaticResource SecondaryButton}"
+                                    Margin="8,0,0,0"
+                                    Content="🗑 Clear"
+                                    Click="ImportClear_Click"
+                                    AutomationProperties.Name="Clear the import form"/>
+                        </StackPanel>
+
+                        <TextBlock x:Name="ImportStatus"
+                                   Foreground="{DynamicResource MutedBrush}"
+                                   TextWrapping="Wrap"
+                                   AutomationProperties.LiveSetting="Polite"
+                                   Text="Waiting for a song to import."/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+    </Grid>
+</UserControl>

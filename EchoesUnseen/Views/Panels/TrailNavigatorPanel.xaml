@@ -1,0 +1,105 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.TrailNavigatorPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="560" d:DesignWidth="560">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Map header -->
+            <RowDefinition Height="Auto"/>  <!-- Filters -->
+            <RowDefinition Height="Auto"/>  <!-- Sonar controls -->
+            <RowDefinition Height="Auto"/>  <!-- Action buttons -->
+            <RowDefinition Height="*"/>     <!-- Nearest list -->
+        </Grid.RowDefinitions>
+
+        <!-- Current map -->
+        <Border Grid.Row="0"
+                Background="#22FF1A8A"
+                BorderBrush="{DynamicResource PrimaryBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,10"
+                Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock x:Name="MapName"
+                           Text="Waiting for Guild Wars 2..."
+                           Foreground="White" FontWeight="SemiBold"/>
+                <TextBlock x:Name="ObjectiveCount"
+                           Text=""
+                           Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Filters -->
+        <WrapPanel Grid.Row="1" Margin="0,0,0,10">
+            <CheckBox x:Name="FilterWaypoints" Content="Waypoints" IsChecked="True"
+                      Foreground="White" Margin="0,0,12,0" Checked="Filter_Changed" Unchecked="Filter_Changed"/>
+            <CheckBox x:Name="FilterPOIs" Content="POIs" IsChecked="True"
+                      Foreground="White" Margin="0,0,12,0" Checked="Filter_Changed" Unchecked="Filter_Changed"/>
+            <CheckBox x:Name="FilterVistas" Content="Vistas" IsChecked="True"
+                      Foreground="White" Margin="0,0,12,0" Checked="Filter_Changed" Unchecked="Filter_Changed"/>
+            <CheckBox x:Name="FilterHero" Content="Hero Challenges" IsChecked="True"
+                      Foreground="White" Margin="0,0,12,0" Checked="Filter_Changed" Unchecked="Filter_Changed"/>
+            <CheckBox x:Name="FilterHearts" Content="Hearts" IsChecked="True"
+                      Foreground="White" Margin="0,0,12,0" Checked="Filter_Changed" Unchecked="Filter_Changed"/>
+        </WrapPanel>
+
+        <!-- Sonar controls -->
+        <Border Grid.Row="2"
+                Background="#22222B"
+                BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,8"
+                Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <CheckBox x:Name="SonarEnabled" Grid.Column="0"
+                          Content="🎵 Sonar" Foreground="White"
+                          VerticalAlignment="Center"
+                          Checked="Sonar_Changed" Unchecked="Sonar_Changed"/>
+                <Slider x:Name="SonarVolumeSlider"
+                        Grid.Column="1"
+                        Minimum="0.1" Maximum="1.0" Value="0.5"
+                        TickFrequency="0.05"
+                        VerticalAlignment="Center"
+                        Margin="12,0"
+                        ValueChanged="SonarVolume_ValueChanged"/>
+                <TextBlock x:Name="SonarVolumeLabel" Grid.Column="2"
+                           Text="50%" Foreground="White" VerticalAlignment="Center"
+                           MinWidth="40" TextAlignment="Right"/>
+            </Grid>
+        </Border>
+
+        <!-- Action buttons -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Style="{StaticResource PrimaryButton}"
+                    Content="🔊 Read Nearest 3"
+                    Click="ReadNearest_Click"/>
+            <Button Style="{StaticResource SecondaryButton}"
+                    Margin="8,0,0,0"
+                    Content="⟳"
+                    Click="Refresh_Click"
+                    ToolTip="Refresh from API"/>
+        </StackPanel>
+
+        <!-- Nearest list -->
+        <Border Grid.Row="4"
+                Background="#22222B"
+                BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="NearestList"/>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

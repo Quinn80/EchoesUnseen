@@ -1,0 +1,326 @@
+{
+  "version": "1.0",
+  "source": "bundled",
+  "songs": [
+    {
+      "id": 1,
+      "name": "Fear Not This Night",
+      "instrument": "Harp",
+      "bpm": 90,
+      "abc": "E E F G | G F E D | C C D E | E3 D1 | E E F G | G F E D | C C D E | D3 C1",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 2,
+      "name": "Tyria's Legacy",
+      "instrument": "Lute",
+      "bpm": 100,
+      "abc": "C E G c | G E C E | D F A d | A F D F | C E G c | G E C E | F A c F | C4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 3,
+      "name": "The Charr Anthem",
+      "instrument": "Horn",
+      "bpm": 120,
+      "abc": "G G A G | C B | G G A G | D C | G G g e | C B A G | F E D C | C4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 4,
+      "name": "Divinity's Reach Waltz",
+      "instrument": "Bell",
+      "bpm": 80,
+      "abc": "C G E | C G E | D A F | D A F | E B G | E B G | F c A | G2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 5,
+      "name": "Crystal Oasis Melody",
+      "instrument": "Flute",
+      "bpm": 95,
+      "abc": "E F G A | G F E D | C D E F | E2 D2 | E F G A | G F E D | C D E D | C4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 6,
+      "name": "Lion's Arch Shanty",
+      "instrument": "Lute",
+      "bpm": 110,
+      "abc": "C E G | C E G | F A c | F A c | G B d | G B d | C E G | C4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 7,
+      "name": "Ode to Joy (Beethoven)",
+      "instrument": "Bell",
+      "bpm": 110,
+      "abc": "E E F G | G F E D | C C D E | E2 D D2 | E E F G | G F E D | C C D E | D2 C C2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 8,
+      "name": "Twinkle Twinkle Little Star",
+      "instrument": "Bell",
+      "bpm": 100,
+      "abc": "C C G G | A A G2 | F F E E | D D C2 | G G F F | E E D2 | G G F F | E E D2 | C C G G | A A G2 | F F E E | D D C2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 9,
+      "name": "Mary Had a Little Lamb",
+      "instrument": "Bell",
+      "bpm": 110,
+      "abc": "E D C D | E E E2 | D D D2 | E G G2 | E D C D | E E E E | D D E D | C4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 10,
+      "name": "Amazing Grace",
+      "instrument": "Flute",
+      "bpm": 80,
+      "abc": "C2 F3 A F | A3 G2 F3 | D2 C3 z | C2 F3 A F | A3 G2 c3 | z2 c3 A c | A2 F3 C2 | F3 D2 C3 | C2 F3 A F | A3 G2 F4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 11,
+      "name": "Scarborough Fair",
+      "instrument": "Lute",
+      "bpm": 90,
+      "abc": "D2 D2 A2 A2 | E F2 E D2 z | A2 c2 c2 B2 | A2 z B G2 A2 | D4 z2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 12,
+      "name": "Greensleeves",
+      "instrument": "Lute",
+      "bpm": 95,
+      "abc": "A2 c3 D E2 | F E D2 B3 | G B2 A2 G2 | E C2 A2 z2 | A2 c3 D E2 | F E D2 B3 | G B2 A2 G2 | A4 z2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 13,
+      "name": "Auld Lang Syne",
+      "instrument": "Horn",
+      "bpm": 85,
+      "abc": "C2 F3 F F2 | A2 G3 F G2 | A2 F3 F A2 | c2 D4 z2 | D2 c3 A A2 | F2 G3 F G2 | A2 F3 D D2 | C2 F4 z2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 14,
+      "name": "When the Saints Go Marching In",
+      "instrument": "Horn",
+      "bpm": 120,
+      "abc": "C E F G4 | C E F G4 | C E F G E | C E D2 z2 | E E D C2 C | E G G G F | E F G E C | D C4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 15,
+      "name": "Drunken Sailor",
+      "instrument": "Lute",
+      "bpm": 130,
+      "abc": "A A A A A A A A | A C E A z2 | G G G G G G G G | G B D G z2 | A A A A A A A A | A C E A B c | B A G B | A4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 16,
+      "name": "Frere Jacques",
+      "instrument": "Bell",
+      "bpm": 110,
+      "abc": "C D E C | C D E C | E F G2 | E F G2 | G A G F E C | G A G F E C | C G C2 | C G C2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 17,
+      "name": "Row Row Row Your Boat",
+      "instrument": "Flute",
+      "bpm": 100,
+      "abc": "C2 C2 C D E2 | E D E F G4 | c c c G G G | E E E C C C | G F E D C4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 18,
+      "name": "Happy Birthday",
+      "instrument": "Bell",
+      "bpm": 100,
+      "abc": "C C D2 C2 F2 | E4 C C D2 | C2 G2 F4 | C C c2 A2 | F2 E2 D2 z | B B A2 F2 | G2 F4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 19,
+      "name": "Korobeiniki (Folk Dance)",
+      "instrument": "Lute",
+      "bpm": 140,
+      "abc": "E2 B C D2 C B | A2 A C E2 D C | B2 B C D2 E2 | C2 A2 A2 z2 | D2 F A2 G F | E2 C E2 D C | B2 B C D2 E2 | C2 A2 A2 z2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 20,
+      "name": "Canon Theme (Pachelbel)",
+      "instrument": "Harp",
+      "bpm": 70,
+      "abc": "E2 D2 C2 B2 | A2 G2 A2 B2 | E2 D2 C2 B2 | A2 B2 c2 B2 | C2 E2 G2 E2 | F2 A2 G2 B2 | c2 G2 E2 D2 | C4 z4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 21,
+      "name": "Morning Mood (Grieg)",
+      "instrument": "Flute",
+      "bpm": 90,
+      "abc": "G E D C D E | G E D C D E | G E D E D C | D E D C2 z | G E D C D E | G E D E G A | G4 z2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 22,
+      "name": "Silent Night",
+      "instrument": "Harp",
+      "bpm": 80,
+      "abc": "G2 A G E3 | G2 A G E3 | D2 D B3 | C2 C G3 | A2 A c2 B A | G2 A G E3 | A2 A c2 B A | G2 A G E3 | D2 D F2 D B | C3 E3 | C G E G2 F D | C4 z2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 23,
+      "name": "Jingle Bells",
+      "instrument": "Bell",
+      "bpm": 130,
+      "abc": "E E E2 | E E E2 | E G C D | E4 | F F F F | F E E E | E D D E | D2 G2 | E E E2 | E E E2 | E G C D | E4 | F F F F | F E E E | G G F D | C4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 24,
+      "name": "Minuet in C (after Bach)",
+      "instrument": "Harp",
+      "bpm": 100,
+      "abc": "G2 C D E F | G2 C2 C2 | A2 F G A B | c2 C2 C2 | F2 E F E D | E2 D E D C | B D C2 B2 | C4 z2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 25,
+      "name": "The Wellerman (Sea Shanty)",
+      "instrument": "Lute",
+      "bpm": 105,
+      "abc": "A2 A C E2 E2 | E F G2 E2 z | A2 A C E2 E2 | E D C2 A2 z | A2 A C E2 E2 | E F G2 G2 z | c2 B A G2 E2 | E D C2 A4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 26,
+      "name": "Shenandoah",
+      "instrument": "Horn",
+      "bpm": 70,
+      "abc": "C2 E2 F G2 | A2 c2 A2 G2 | A G F2 E2 | F2 E D C4 | C2 E2 F G2 | A2 G2 A2 c2 | A2 G2 E2 D2 | C4 z4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 27,
+      "name": "Londonderry Air (Danny Boy)",
+      "instrument": "Flute",
+      "bpm": 75,
+      "abc": "C D F G A2 G F | A c2 A G F D2 | C D F G A2 G F | A G2 F G4 | F G A c2 c B A | G F2 D F4 | C D F G A2 G F | A G2 F F4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 28,
+      "name": "The Ash Grove",
+      "instrument": "Harp",
+      "bpm": 95,
+      "abc": "C E G2 G F E F | G2 C2 C2 z | D F A2 A G F G | A2 D2 D2 z | C E G2 G F E F | G A B c2 B A G | F E D C2 D E F | E2 D2 C2 z2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 29,
+      "name": "The Wild Rover",
+      "instrument": "Lute",
+      "bpm": 115,
+      "abc": "C2 E2 G2 G2 | A2 G2 E2 C2 | D2 E2 F2 F2 | E2 D2 C2 z2 | G2 A2 c2 c2 | B2 A2 G2 E2 | C2 E2 D2 D2 | C4 z4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 30,
+      "name": "Loch Lomond",
+      "instrument": "Flute",
+      "bpm": 85,
+      "abc": "C2 E G2 G E | G A c2 c A | G E C2 C D | E2 D2 C2 z | C2 E G2 G E | G A c2 c A | G E D2 E D | C4 z2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 31,
+      "name": "Swallowtail Jig",
+      "instrument": "Flute",
+      "bpm": 130,
+      "abc": "E A A B A A | c B A B2 z | E A A B A A | c B A G E D | E A A B A A | c B c B A G | E G G A G G | B A G E D2",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    },
+    {
+      "id": 32,
+      "name": "The Parting Glass",
+      "instrument": "Harp",
+      "bpm": 80,
+      "abc": "A2 C D E2 E2 | G2 E D C2 z2 | A2 C D E2 G2 | A2 G E D2 z2 | c2 c B A2 G2 | A2 G E C2 D2 | E2 D C A2 A2 | A4 z4",
+      "source": "bundled",
+      "uploader": "EchoesUnseen",
+      "rating": 100
+    }
+  ]
+}

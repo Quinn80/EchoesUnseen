@@ -1,0 +1,57 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.BuildGearPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="560" d:DesignWidth="560">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Character selector + buttons -->
+            <RowDefinition Height="Auto"/>  <!-- Status line -->
+            <RowDefinition Height="*"/>     <!-- Equipment list -->
+        </Grid.RowDefinitions>
+
+        <!-- Top row: character dropdown, read-aloud, refresh -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ComboBox x:Name="CharacterCombo"
+                      Grid.Column="0"
+                      Padding="8,8"
+                      SelectionChanged="CharacterCombo_SelectionChanged"
+                      ToolTip="Select a character"/>
+
+            <Button Grid.Column="1"
+                    Margin="8,0,0,0"
+                    Style="{StaticResource SecondaryButton}"
+                    Content="🔊 Read Aloud"
+                    Click="ReadAloud_Click"
+                    ToolTip="Speak build and gear"/>
+
+            <Button Grid.Column="2"
+                    Margin="8,0,0,0"
+                    Style="{StaticResource SecondaryButton}"
+                    Content="⟳"
+                    Click="Refresh_Click"
+                    ToolTip="Refresh from API"/>
+        </Grid>
+
+        <!-- Status/error line -->
+        <TextBlock x:Name="StatusText"
+                   Grid.Row="1"
+                   Foreground="{DynamicResource MutedBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,12"/>
+
+        <!-- Equipment list -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="EquipmentList"/>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

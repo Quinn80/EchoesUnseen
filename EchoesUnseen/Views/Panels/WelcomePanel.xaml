@@ -1,0 +1,49 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.WelcomePanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="440" d:DesignWidth="560">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+        <StackPanel>
+
+            <TextBlock Text="Welcome, Commander."
+                       FontWeight="Bold" FontSize="20" Foreground="White"
+                       Margin="0,0,0,6"
+                       AutomationProperties.HeadingLevel="Level1"/>
+
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                       Margin="0,0,0,16"
+                       Text="Here are the only controls you need to get started. Everything is spoken aloud, so you never need to look at the screen."/>
+
+            <!-- Basic controls -->
+            <Border BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="1"
+                    CornerRadius="8" Padding="16" Margin="0,0,0,14"
+                    Background="#22000000">
+                <StackPanel x:Name="ControlsList"/>
+            </Border>
+
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                       Margin="0,0,0,16"
+                       Text="You can change any of these shortcuts later in Settings, under the Keybinds tab. Settings is also the last stop on the wheel."/>
+
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="RepeatButton"
+                        Style="{StaticResource SecondaryButton}"
+                        Content="🔊 Read this again"
+                        Margin="0,0,8,0"
+                        Click="Repeat_Click"
+                        AutomationProperties.Name="Read these controls aloud again"/>
+                <Button x:Name="DoneButton"
+                        Style="{StaticResource PrimaryButton}"
+                        Content="✓ Got it"
+                        Click="Done_Click"
+                        AutomationProperties.Name="Close this welcome screen"
+                        AutomationProperties.HelpText="Closes the welcome screen. You can reopen it from Settings, About."/>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

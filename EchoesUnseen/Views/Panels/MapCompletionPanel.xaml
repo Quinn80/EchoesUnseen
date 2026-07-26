@@ -1,0 +1,109 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.MapCompletionPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="560" d:DesignWidth="560">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Map header -->
+            <RowDefinition Height="Auto"/>  <!-- Category summary -->
+            <RowDefinition Height="Auto"/>  <!-- Action buttons -->
+            <RowDefinition Height="Auto"/>  <!-- Status line -->
+            <RowDefinition Height="*"/>     <!-- Objective list -->
+        </Grid.RowDefinitions>
+
+        <!-- Map header -->
+        <Border Grid.Row="0"
+                Background="#22FF1A8A"
+                BorderBrush="{DynamicResource PrimaryBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,10"
+                Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock x:Name="MapName"
+                           Text="Waiting for Guild Wars 2..."
+                           Foreground="White" FontWeight="SemiBold"/>
+                <TextBlock x:Name="TotalProgress"
+                           Text=""
+                           Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Category summary grid -->
+        <UniformGrid Grid.Row="1" Columns="5" Margin="0,0,0,10">
+            <Border Background="#22222B" BorderBrush="#60A5FA" BorderThickness="1"
+                    CornerRadius="6" Padding="8,6" Margin="0,0,3,0">
+                <StackPanel>
+                    <TextBlock Text="Waypoints" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"/>
+                    <TextBlock x:Name="WaypointCount" Text="—" Foreground="#60A5FA" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+            <Border Background="#22222B" BorderBrush="#FACC15" BorderThickness="1"
+                    CornerRadius="6" Padding="8,6" Margin="3,0,3,0">
+                <StackPanel>
+                    <TextBlock Text="POIs" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"/>
+                    <TextBlock x:Name="PoiCount" Text="—" Foreground="#FACC15" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+            <Border Background="#22222B" BorderBrush="#4ADE80" BorderThickness="1"
+                    CornerRadius="6" Padding="8,6" Margin="3,0,3,0">
+                <StackPanel>
+                    <TextBlock Text="Vistas" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"/>
+                    <TextBlock x:Name="VistaCount" Text="—" Foreground="#4ADE80" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+            <Border Background="#22222B" BorderBrush="#C084FC" BorderThickness="1"
+                    CornerRadius="6" Padding="8,6" Margin="3,0,3,0">
+                <StackPanel>
+                    <TextBlock Text="Hero" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"/>
+                    <TextBlock x:Name="HeroCount" Text="—" Foreground="#C084FC" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+            <Border Background="#22222B" BorderBrush="#F87171" BorderThickness="1"
+                    CornerRadius="6" Padding="8,6" Margin="3,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="Hearts" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"/>
+                    <TextBlock x:Name="HeartCount" Text="—" Foreground="#F87171" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <!-- Action buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Style="{StaticResource PrimaryButton}"
+                    Content="🔊 Read Summary"
+                    Click="ReadSummary_Click"/>
+            <Button Style="{StaticResource SecondaryButton}"
+                    Margin="8,0,0,0"
+                    Content="📋 Read Next 5 Nearest"
+                    Click="ReadNext_Click"/>
+            <Button Style="{StaticResource SecondaryButton}"
+                    Margin="8,0,0,0"
+                    Content="⟳"
+                    Click="Refresh_Click"
+                    ToolTip="Refresh from API"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="3"
+                   x:Name="StatusText"
+                   Foreground="{DynamicResource MutedBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8"/>
+
+        <!-- Full objective list, sorted by distance -->
+        <Border Grid.Row="4"
+                Background="#22222B"
+                BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="ObjectiveList"/>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

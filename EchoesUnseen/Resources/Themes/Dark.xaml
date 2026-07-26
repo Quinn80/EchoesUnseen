@@ -1,0 +1,547 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         COLOR PALETTE — default "Hot Pink" theme values.
+         These are the initial values; ThemeService replaces them at runtime
+         when the user picks a different theme in Settings.
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <Color x:Key="PrimaryColor">#FFFF1A8A</Color>
+    <Color x:Key="PrimaryColorGlow">#66FF1A8A</Color>
+    <Color x:Key="SecondaryColor">#FFA41435</Color>
+    <Color x:Key="BackgroundColor">#FF0A0A0F</Color>
+    <Color x:Key="SurfaceColor">#CC14141C</Color>
+    <Color x:Key="SurfaceBorderColor">#FFFF1A8A</Color>
+    <Color x:Key="ForegroundColor">#FFFFFFFF</Color>
+    <Color x:Key="MutedColor">#FFB8B8C8</Color>
+    <Color x:Key="SuccessColor">#FF4ADE80</Color>
+    <Color x:Key="WarningColor">#FFFACC15</Color>
+    <Color x:Key="ErrorColor">#FFEF4444</Color>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         v21 GLOBAL TEXT SIZE — one body size drives all panel text via
+         DynamicResource + WPF font inheritance. "Small" is for hints and
+         captions and tracks the body size (ThemeService keeps it in step).
+         ══════════════════════════════════════════════════════════════════ -->
+    <sys:Double x:Key="GlobalFontSize">22</sys:Double>
+    <sys:Double x:Key="GlobalFontSizeSmall">12</sys:Double>
+
+    <!-- v21 FOCUS VISUAL — replaces WPF's faint dotted focus rectangle with a
+         solid, clearly visible outline everywhere. High Contrast switches
+         FocusBrush to pure white. -->
+    <SolidColorBrush x:Key="FocusBrush" Color="#FFFF1A8A"/>
+    <Style x:Key="{x:Static SystemParameters.FocusVisualStyleKey}">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Rectangle Margin="-2"
+                               StrokeThickness="2.5"
+                               Stroke="{DynamicResource FocusBrush}"
+                               RadiusX="4" RadiusY="4"
+                               SnapsToDevicePixels="True"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- v21 PANEL CHROME — the pop-up frame's border, card and title brushes,
+         extracted from PanelHost so High Contrast can restyle them live.
+         Defaults match the Claude Design look exactly. -->
+    <LinearGradientBrush x:Key="PanelFiligreeBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF6C7AE5" Offset="0.0"/>
+        <GradientStop Color="#FF1B275F" Offset="0.35"/>
+        <GradientStop Color="#FFE472DC" Offset="0.65"/>
+        <GradientStop Color="#FF122555" Offset="1.0"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="PanelCardBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#FF02030C" Offset="0.0"/>
+        <GradientStop Color="#FF010105" Offset="1.0"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="PanelTitleBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#FF47C9FF" Offset="0.0"/>
+        <GradientStop Color="#FFFF94FF" Offset="1.0"/>
+    </LinearGradientBrush>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         v21.4 TAB STYLING — WPF's default tab headers are light-on-light
+         (the selected tab was a white chip with white text: unreadable).
+         These implicit styles restyle every TabControl in the app as dark
+         themed chips with a glowing underline on the selected tab. All
+         colors are DynamicResource so themes and High Contrast apply live.
+         ══════════════════════════════════════════════════════════════════ -->
+    <Style TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0,10,0,0"/>
+    </Style>
+    <Style TargetType="TabItem">
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="Chip"
+                            CornerRadius="8,8,0,0"
+                            Padding="14,7"
+                            Margin="0,0,4,0"
+                            Background="#18FFFFFF"
+                            BorderThickness="0,0,0,2"
+                            BorderBrush="Transparent"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter ContentSource="Header"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Chip" Property="Background"
+                                    Value="{DynamicResource SurfaceBrush}"/>
+                            <Setter TargetName="Chip" Property="BorderBrush"
+                                    Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter Property="Foreground"
+                                    Value="{DynamicResource ForegroundBrush}"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsSelected" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="Chip" Property="Background" Value="#2EFFFFFF"/>
+                            <Setter Property="Foreground"
+                                    Value="{DynamicResource ForegroundBrush}"/>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         HUD RING ARTWORK — bitmap shown as the radial HUD's background.
+         Themes can override "HudRingImage" with a different pack URI to
+         swap artwork (e.g. cyberpunk theme could ship a neon-cyan ring).
+         "HudRingTintBrush" is a colored overlay that re-tints the ring
+         to match the current theme palette.
+         ══════════════════════════════════════════════════════════════════ -->
+    <BitmapImage x:Key="HudRingImage"
+                 UriSource="pack://application:,,,/Resources/Images/hud-ring.png"/>
+    <!-- Center logo (Echoes Unseen dragon-and-compass). Themes can swap. -->
+    <BitmapImage x:Key="EchoesUnseenLogo"
+                 UriSource="pack://application:,,,/Resources/Images/echoes-unseen-logo.png"/>
+    <!-- Default (Hot Pink) theme: faint pink tint to nudge the purple gems
+         toward pink. Other themes set higher Opacity to recolor more
+         aggressively. -->
+    <SolidColorBrush x:Key="HudRingTintBrush" Color="#FFFF1A8A" Opacity="0.15"/>
+
+    <!-- ICON GRADIENT — the blue→pink moving gradient used on HUD button icons.
+         Defined here so themes can override (e.g. matrix theme = green→white).
+         The gradient stops are animated in RadialHud.xaml.cs to "shimmer". -->
+    <LinearGradientBrush x:Key="HudIconBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop x:Name="HudIconStop1" Color="#FF38BDF8" Offset="0.0"/>
+        <GradientStop x:Name="HudIconStop2" Color="#FFFF1A8A" Offset="1.0"/>
+    </LinearGradientBrush>
+
+    <!-- Brushes — initial values; ThemeService.Apply rewrites these at runtime. -->
+    <SolidColorBrush x:Key="PrimaryBrush"        Color="#FFFF1A8A"/>
+    <SolidColorBrush x:Key="SecondaryBrush"      Color="#FFA41435"/>
+    <SolidColorBrush x:Key="BackgroundBrush"     Color="#FF0A0A0F"/>
+    <SolidColorBrush x:Key="SurfaceBrush"        Color="#CC14141C"/>
+    <SolidColorBrush x:Key="SurfaceBorderBrush"  Color="#FFFF1A8A" Opacity="0.6"/>
+    <SolidColorBrush x:Key="ForegroundBrush"     Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="MutedBrush"          Color="#FFB8B8C8"/>
+    <SolidColorBrush x:Key="SuccessBrush"        Color="#FF4ADE80"/>
+    <SolidColorBrush x:Key="WarningBrush"        Color="#FFFACC15"/>
+    <SolidColorBrush x:Key="ErrorBrush"          Color="#FFEF4444"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TYPOGRAPHY
+         ══════════════════════════════════════════════════════════════════ -->
+    <sys:Double x:Key="FontSizeSmall">12</sys:Double>
+    <sys:Double x:Key="FontSizeBase">14</sys:Double>
+    <sys:Double x:Key="FontSizeLarge">18</sys:Double>
+    <sys:Double x:Key="FontSizeHeading">22</sys:Double>
+    <sys:Double x:Key="FontSizePanelTitle">20</sys:Double>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PRIMARY BUTTON — Filled in the theme's primary accent, with a glow.
+         Uses DynamicResource so color updates flow live when the user
+         changes theme in Settings.
+         ══════════════════════════════════════════════════════════════════ -->
+    <!-- Filled action button. Foreground comes from OnPrimaryBrush (black or
+         white, chosen from the accent's luminance) so the label stays readable
+         on every theme — white-on-gold was unreadable before. A light outline
+         keeps the button's edge visible against busy game backgrounds. -->
+    <Style x:Key="PrimaryButton" TargetType="Button">
+        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="16,9"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="#66FFFFFF" BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <Border.Effect>
+                            <DropShadowEffect Color="{DynamicResource PrimaryColor}"
+                                              BlurRadius="14" ShadowDepth="0" Opacity="0.55"/>
+                        </Border.Effect>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Opacity" Value="0.9"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Opacity" Value="0.7"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Secondary / outline variant. Given a SOLID dark fill rather than a
+         transparent one and a thicker accent border, so it stays readable over
+         whatever the game is drawing underneath. Label is plain white for
+         maximum contrast, with the accent carried by the border. -->
+    <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+        <Setter Property="Background" Value="#E61A1A24"/>
+        <Setter Property="Foreground" Value="#FFFFFFFF"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{DynamicResource PrimaryBrush}"
+                            BorderThickness="2"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="#FF2A2A38"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="#FF3A3A48"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TEXTBOX — dark surface with theme-tinted focus ring
+         ══════════════════════════════════════════════════════════════════ -->
+    <Style x:Key="InputBox" TargetType="TextBox">
+        <Setter Property="Background" Value="#22222B"/>
+        <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource PrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="10,8"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
+        <Style.Triggers>
+            <Trigger Property="IsFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         KEYBOARD FOCUS INDICATOR — high-contrast outline that follows
+         keyboard navigation (Tab / Shift+Tab). Essential for screen-reader
+         users (NVDA / JAWS / Narrator) who navigate with the keyboard and
+         need to see which control currently has focus.
+         ══════════════════════════════════════════════════════════════════ -->
+    <Style x:Key="AppFocusVisualStyle">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Rectangle StrokeThickness="2"
+                               Stroke="{DynamicResource PrimaryBrush}"
+                               StrokeDashArray="2,1"
+                               SnapsToDevicePixels="True"
+                               Margin="-3"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Apply the focus visual to all controls by default. -->
+    <Style TargetType="Control">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource AppFocusVisualStyle}"/>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         GLOBAL DEFAULTS — all text and controls inherit theme foreground.
+         ══════════════════════════════════════════════════════════════════ -->
+    <Style TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
+    </Style>
+
+    <Style TargetType="Label">
+        <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         COMBOBOX (dropdowns) — dark grey field AND dark grey popup list with
+         white text. These are IMPLICIT styles (no x:Key) so every dropdown in
+         every panel and popup picks them up automatically. WPF's default combo
+         popup is light with black text; a full template is the only reliable
+         way to recolour the drop-down list itself, not just the closed field.
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Each row in the open list -->
+    <Style TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="#FFFFFFFF"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="10,7"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="row" Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="row" Property="Background" Value="#FF3A3A48"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="row" Property="Background" Value="#FF454556"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         JARVIS MIC BUTTON — animated in BOTH states so it always reads as a
+         living control, with a clear colour shift between them:
+
+           IDLE   → steel-blue core, a slow breathing steel halo (always
+                    moving, so it never looks like a dead button).
+           ACTIVE → bright cyan core, a faster cyan halo, and expanding
+                    "sonar" rings pinging outward — unmistakably "listening".
+
+         Idle and active use SEPARATE halo elements, each animated by exactly
+         one storyboard, so their opacity animations never fight. Drive the
+         state from code-behind by setting the button Tag to "active" or "idle".
+         Reusable on Voice to Chat and Oracle; override Width/Height/FontSize
+         locally for the smaller inline variant.
+         ══════════════════════════════════════════════════════════════════ -->
+    <Style x:Key="JarvisMic" TargetType="Button">
+        <Setter Property="Width" Value="120"/>
+        <Setter Property="Height" Value="120"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontSize" Value="52"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid ClipToBounds="False">
+                        <!-- ACTIVE sonar rings (invisible until active) -->
+                        <Ellipse x:Name="ring1" Margin="8" Stroke="#FF00E5FF" StrokeThickness="2"
+                                 Opacity="0" RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform><ScaleTransform x:Name="r1" ScaleX="1" ScaleY="1"/></Ellipse.RenderTransform>
+                        </Ellipse>
+                        <Ellipse x:Name="ring2" Margin="8" Stroke="#FF00E5FF" StrokeThickness="2"
+                                 Opacity="0" RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform><ScaleTransform x:Name="r2" ScaleX="1" ScaleY="1"/></Ellipse.RenderTransform>
+                        </Ellipse>
+
+                        <!-- IDLE halo — steel blue, always slowly breathing -->
+                        <Ellipse x:Name="haloIdle" Margin="6" Fill="#FF3E7CB8" Opacity="0.25">
+                            <Ellipse.Effect><BlurEffect Radius="24"/></Ellipse.Effect>
+                        </Ellipse>
+
+                        <!-- ACTIVE halo — cyan, only visible while listening -->
+                        <Ellipse x:Name="haloActive" Margin="4" Fill="#FF00E5FF" Opacity="0">
+                            <Ellipse.Effect><BlurEffect Radius="28"/></Ellipse.Effect>
+                        </Ellipse>
+
+                        <!-- core disc — steel by default, cyan when active -->
+                        <Ellipse x:Name="core" Margin="8" Fill="#FF2E5E8C"
+                                 Stroke="White" StrokeThickness="3">
+                            <Ellipse.Effect>
+                                <DropShadowEffect Color="#FF1E5A9A" BlurRadius="26" ShadowDepth="0" Opacity="0.7"/>
+                            </Ellipse.Effect>
+                        </Ellipse>
+
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <!-- Idle breathing runs from load, forever. -->
+                        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="haloIdle" Storyboard.TargetProperty="Opacity"
+                                                     From="0.16" To="0.5" Duration="0:0:2.2"
+                                                     AutoReverse="True" RepeatBehavior="Forever"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="core" Property="Opacity" Value="0.9"/>
+                        </Trigger>
+
+                        <!-- ACTIVE: cyan core + cyan halo + looping sonar pings -->
+                        <Trigger Property="Tag" Value="active">
+                            <Setter TargetName="core" Property="Fill" Value="#FF00E5FF"/>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard x:Name="sonar">
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="r1" Storyboard.TargetProperty="ScaleX"
+                                                         From="1" To="1.7" Duration="0:0:1.6"/>
+                                        <DoubleAnimation Storyboard.TargetName="r1" Storyboard.TargetProperty="ScaleY"
+                                                         From="1" To="1.7" Duration="0:0:1.6"/>
+                                        <DoubleAnimation Storyboard.TargetName="ring1" Storyboard.TargetProperty="Opacity"
+                                                         From="0.85" To="0" Duration="0:0:1.6"/>
+                                        <DoubleAnimation Storyboard.TargetName="r2" Storyboard.TargetProperty="ScaleX"
+                                                         From="1" To="1.7" Duration="0:0:1.6" BeginTime="0:0:0.8"/>
+                                        <DoubleAnimation Storyboard.TargetName="r2" Storyboard.TargetProperty="ScaleY"
+                                                         From="1" To="1.7" Duration="0:0:1.6" BeginTime="0:0:0.8"/>
+                                        <DoubleAnimation Storyboard.TargetName="ring2" Storyboard.TargetProperty="Opacity"
+                                                         From="0.85" To="0" Duration="0:0:1.6" BeginTime="0:0:0.8"/>
+                                        <DoubleAnimation Storyboard.TargetName="haloActive" Storyboard.TargetProperty="Opacity"
+                                                         From="0.45" To="0.9" Duration="0:0:0.7" AutoReverse="True"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="sonar"/>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- High-contrast pill button — bright white fill, black text, for the
+         Piper voice Preview / Download actions so they stand out clearly. -->
+    <Style x:Key="HCButton" TargetType="Button">
+        <Setter Property="Foreground" Value="#FF000000"/>
+        <Setter Property="Background" Value="#FFFFFFFF"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
+        <Setter Property="Padding" Value="12,5"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            CornerRadius="6" Padding="{TemplateBinding Padding}"
+                            BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="2">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
+                        </Trigger>
+                        <!-- Clearly "off": dim fill, muted label, dashed edge, so a
+                             disabled Preview reads as unavailable rather than broken. -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Background" Value="#FF3A3A44"/>
+                            <Setter TargetName="bd" Property="BorderBrush" Value="#FF6A6A78"/>
+                            <Setter Property="Foreground" Value="#FF9A9AA8"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The dropdown control itself -->
+    <Style TargetType="ComboBox">
+        <Setter Property="Foreground" Value="#FFFFFFFF"/>
+        <Setter Property="Background" Value="#FF2A2A32"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton x:Name="toggle" Focusable="False"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                      ClickMode="Press">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderThickness="1" CornerRadius="4">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="26"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Path Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  Data="M 0 0 L 8 0 L 4 5 Z" Fill="#FFFFFFFF"/>
+                                        </Grid>
+                                    </Border>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <ContentPresenter x:Name="content" IsHitTestVisible="False"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          Margin="10,0,30,0" VerticalAlignment="Center"
+                                          TextElement.Foreground="#FFFFFFFF"/>
+
+                        <!-- StaysOpen MUST be false. With the default (true) the
+                             popup keeps mouse capture, so clicks on an item never
+                             commit a selection and the list appears frozen —
+                             which is exactly why voices couldn't be picked. -->
+                        <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                               StaysOpen="False" AllowsTransparency="True"
+                               Focusable="False" PopupAnimation="Slide">
+                            <Border Background="#FF2A2A32" BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                                    BorderThickness="1" CornerRadius="4"
+                                    MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                <ScrollViewer>
+                                    <!-- Contained navigation keeps arrow keys inside
+                                         the open list, so the dropdown is usable from
+                                         the keyboard and by a screen reader. -->
+                                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>EchoesUnseen</RootNamespace>
+    <AssemblyName>EchoesUnseen</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>AnyCPU;x64</Platforms>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <!-- Self-contained publish settings -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- App metadata -->
+    <ApplicationIcon Condition="Exists('Resources\app.ico')">Resources\app.ico</ApplicationIcon>
+    <!-- Beta line. The old "21.x" numbering belonged to the pre-rebuild WPF
+         builds; this native rebuild ships as Beta 1.x so tester reports and the
+         About tab agree. -->
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
+    <Company>Echoes Unseen</Company>
+    <Product>Echoes Unseen</Product>
+    <Description>Accessibility overlay companion for Guild Wars 2</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Audio capture (microphone) and tone generation (sonar) -->
+    <PackageReference Include="NAudio" Version="2.2.1" />
+
+    <!-- MVVM plumbing: ObservableObject, RelayCommand -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+
+    <!-- Windows SAPI for TTS + System.Speech.Recognition for local
+         speech-to-text (the OS accessibility feature, NOT AI/ML —
+         it's a 1990s Hidden Markov Model that ships with Windows). -->
+    <PackageReference Include="System.Speech" Version="8.0.0" />
+
+    <!-- GDI/Bitmap support for screen capture (needed by OCR panels) -->
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+  </ItemGroup>
+
+  <!-- Static assets (Piper voice binaries + models, songs library, optional app icon) -->
+  <ItemGroup>
+    <None Include="Resources\Piper\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!-- Embedded so a single-file exe carries the starter songs with no loose
+         Songs folder; also copied to output for normal folder builds. -->
+    <EmbeddedResource Include="Songs\bundled-songs.json" />
+    <None Include="Songs\bundled-songs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!-- Ensure icon is present at build time (if it exists) -->
+    <None Update="Resources\app.ico" Condition="Exists('Resources\app.ico')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- HUD ring artwork and any other in-app images. Embedded into the assembly
+       so XAML can reference them via pack URIs without needing the files on disk. -->
+  <ItemGroup>
+    <Resource Include="Resources\Images\**\*.png" />
+    <Resource Include="Resources\Images\**\*.jpg" />
+  </ItemGroup>
+
+</Project>

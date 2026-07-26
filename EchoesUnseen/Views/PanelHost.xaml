@@ -1,0 +1,384 @@
+<UserControl x:Class="EchoesUnseen.Views.PanelHost"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="#88000000"
+             Focusable="True">
+
+    <UserControl.Resources>
+        <!-- Ember close button: a small glowing "X" that brightens on hover,
+             styled like a dying ember rather than a plain X. -->
+        <Style x:Key="CloseButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#FFFFB060"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="17">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#44FF6A00"/>
+                                <Setter Property="Foreground" Value="#FFFFD890"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </UserControl.Resources>
+
+    <!-- Click outside the card dismisses the panel -->
+    <Grid MouseLeftButtonDown="Root_MouseLeftButtonDown">
+
+        <!-- Wrapper holds the rotating glow behind the card + the card itself -->
+        <Grid x:Name="CardWrapper"
+              HorizontalAlignment="Center" VerticalAlignment="Center"
+              MaxWidth="620" MaxHeight="700"
+              RenderTransformOrigin="0.5,0.5">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="CardMove"/>
+            </Grid.RenderTransform>
+
+            <!-- Rotating magic-fire glow behind the panel -->
+            <Ellipse x:Name="PanelGlow"
+                     Margin="-40"
+                     IsHitTestVisible="False"
+                     RenderTransformOrigin="0.5,0.5"
+                     Opacity="0.75">
+                <Ellipse.Fill>
+                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5"
+                                         RadiusX="0.5" RadiusY="0.5">
+                        <GradientStop Color="#00000000" Offset="0.45"/>
+                        <GradientStop Color="#66FF6A00" Offset="0.72"/>
+                        <GradientStop Color="#55B03AF0" Offset="0.86"/>
+                        <GradientStop Color="#00000000" Offset="1.0"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+                <Ellipse.RenderTransform>
+                    <RotateTransform x:Name="PanelGlowRotate" Angle="0"/>
+                </Ellipse.RenderTransform>
+            </Ellipse>
+
+            <!-- Filigree gradient border — exact conic colors from the design -->
+            <Border CornerRadius="20" Padding="2">
+                <Border.Background>
+                    <DynamicResource ResourceKey="PanelFiligreeBrush"/>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect Color="#FFDF59D7" BlurRadius="40" ShadowDepth="0" Opacity="0.5"/>
+                </Border.Effect>
+
+                <!-- The panel card body -->
+                <Border x:Name="Card"
+                        CornerRadius="18"
+                        MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                    <Border.Background>
+                        <DynamicResource ResourceKey="PanelCardBrush"/>
+                    </Border.Background>
+
+                    <Grid>
+                        <!-- Inner brimstone sheen top -->
+                        <Border CornerRadius="18" IsHitTestVisible="False">
+                            <Border.Background>
+                                <RadialGradientBrush Center="0.5,0.0" GradientOrigin="0.5,0.0"
+                                                     RadiusX="0.8" RadiusY="0.4">
+                                    <GradientStop Color="#3AB03AF0" Offset="0.0"/>
+                                    <GradientStop Color="#00000000" Offset="0.6"/>
+                                </RadialGradientBrush>
+                            </Border.Background>
+                        </Border>
+
+                        <!-- Floating ember layer (particles spawned in code-behind) -->
+                        <Canvas x:Name="EmberLayer" IsHitTestVisible="False" ClipToBounds="True"/>
+
+                        <!-- v21.3: DRAG BAR — grab here (or the header) to move the
+                             panel anywhere on screen. Double-click to reset the
+                             panel's position and size. -->
+                        <Border x:Name="DragGrip"
+                                Width="96" Height="20"
+                                HorizontalAlignment="Center" VerticalAlignment="Top"
+                                Margin="0,5,0,0" CornerRadius="10"
+                                Cursor="SizeAll">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#CCF852F0" Offset="0.0"/>
+                                    <GradientStop Color="#CC7A5CFF" Offset="0.5"/>
+                                    <GradientStop Color="#CC3695FF" Offset="1.0"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.Effect>
+                                <DropShadowEffect Color="#FFF852F0" BlurRadius="14" ShadowDepth="0" Opacity="0.85"/>
+                            </Border.Effect>
+                        </Border>
+                        <Border Width="96" Height="20"
+                                HorizontalAlignment="Center" VerticalAlignment="Top"
+                                Margin="0,5,0,0" CornerRadius="10"
+                                Background="Transparent"
+                                Cursor="SizeAll"
+                                Panel.ZIndex="50"
+                                ToolTip="Drag to move this panel • Double-click to reset position and size"
+                                AutomationProperties.Name="Panel drag bar"
+                                AutomationProperties.HelpText="Drag with the mouse to move this panel. Double-click to reset its position and size."
+                                MouseLeftButtonDown="DragGrip_MouseLeftButtonDown"
+                                MouseMove="DragGrip_MouseMove"
+                                MouseLeftButtonUp="DragGrip_MouseLeftButtonUp">
+                            <TextBlock Text="• • •" FontSize="11" FontWeight="Bold"
+                                       Foreground="#FFFFFFFF"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Margin="0,-2,0,0">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect Color="#FF000000" BlurRadius="4" ShadowDepth="0" Opacity="0.8"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
+                        </Border>
+
+                        <!-- v21.3: RESIZE GRIP — drag the corner to resize the panel. -->
+                        <Border x:Name="ResizeGrip"
+                                Width="26" Height="26"
+                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                Margin="0,0,6,6" CornerRadius="7"
+                                Cursor="SizeNWSE"
+                                Panel.ZIndex="50"
+                                ToolTip="Drag to resize this panel"
+                                AutomationProperties.Name="Panel resize grip"
+                                AutomationProperties.HelpText="Drag with the mouse to resize this panel."
+                                MouseLeftButtonDown="ResizeGrip_MouseLeftButtonDown"
+                                MouseMove="ResizeGrip_MouseMove"
+                                MouseLeftButtonUp="ResizeGrip_MouseLeftButtonUp">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#B33695FF" Offset="0.0"/>
+                                    <GradientStop Color="#B3F852F0" Offset="1.0"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.Effect>
+                                <DropShadowEffect Color="#FF3695FF" BlurRadius="12" ShadowDepth="0" Opacity="0.8"/>
+                            </Border.Effect>
+                            <TextBlock Text="◢" FontSize="12"
+                                       Foreground="#FFFFFFFF"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect Color="#FF000000" BlurRadius="3" ShadowDepth="0" Opacity="0.8"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
+                        </Border>
+
+                        <!-- Twinkling corner gems — all four, rich fire-and-ice
+                             gradients from the new design (blue TL/BR, pink TR/BL) -->
+                        <Rectangle Width="14" Height="14" RadiusX="4" RadiusY="4"
+                                   HorizontalAlignment="Left" VerticalAlignment="Top"
+                                   Margin="13" RenderTransformOrigin="0.5,0.5"
+                                   IsHitTestVisible="False">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#FFFFFFFF" Offset="0.0"/>
+                                    <GradientStop Color="#FF44BEFF" Offset="0.35"/>
+                                    <GradientStop Color="#FF0039FF" Offset="1.0"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.Effect>
+                                <DropShadowEffect Color="#FF008EFF" BlurRadius="12" ShadowDepth="0" Opacity="0.95"/>
+                            </Rectangle.Effect>
+                            <Rectangle.RenderTransform>
+                                <RotateTransform Angle="45"/>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+                        <Rectangle Width="14" Height="14" RadiusX="4" RadiusY="4"
+                                   HorizontalAlignment="Right" VerticalAlignment="Top"
+                                   Margin="13" RenderTransformOrigin="0.5,0.5"
+                                   IsHitTestVisible="False">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#FFFFFFFF" Offset="0.0"/>
+                                    <GradientStop Color="#FFFF69FC" Offset="0.35"/>
+                                    <GradientStop Color="#FFE3009D" Offset="1.0"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.Effect>
+                                <DropShadowEffect Color="#FFFF00CA" BlurRadius="12" ShadowDepth="0" Opacity="0.95"/>
+                            </Rectangle.Effect>
+                            <Rectangle.RenderTransform>
+                                <RotateTransform Angle="45"/>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+                        <Rectangle Width="14" Height="14" RadiusX="4" RadiusY="4"
+                                   HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                   Margin="13" RenderTransformOrigin="0.5,0.5"
+                                   IsHitTestVisible="False">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#FFFFFFFF" Offset="0.0"/>
+                                    <GradientStop Color="#FFFF69FC" Offset="0.35"/>
+                                    <GradientStop Color="#FFE3009D" Offset="1.0"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.Effect>
+                                <DropShadowEffect Color="#FFFF00CA" BlurRadius="12" ShadowDepth="0" Opacity="0.95"/>
+                            </Rectangle.Effect>
+                            <Rectangle.RenderTransform>
+                                <RotateTransform Angle="45"/>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+                        <Rectangle Width="14" Height="14" RadiusX="4" RadiusY="4"
+                                   HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                   Margin="13" RenderTransformOrigin="0.5,0.5"
+                                   IsHitTestVisible="False">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#FFFFFFFF" Offset="0.0"/>
+                                    <GradientStop Color="#FF44BEFF" Offset="0.35"/>
+                                    <GradientStop Color="#FF0039FF" Offset="1.0"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.Effect>
+                                <DropShadowEffect Color="#FF008EFF" BlurRadius="12" ShadowDepth="0" Opacity="0.95"/>
+                            </Rectangle.Effect>
+                            <Rectangle.RenderTransform>
+                                <RotateTransform Angle="45"/>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Header: ember icon badge + gold title/subtitle + close -->
+                            <Grid Grid.Row="0" Margin="22,20,14,14"
+                                  Background="Transparent"
+                                  MouseLeftButtonDown="DragGrip_MouseLeftButtonDown"
+                                  MouseMove="DragGrip_MouseMove"
+                                  MouseLeftButtonUp="DragGrip_MouseLeftButtonUp">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Ember-glow circular icon badge -->
+                                <Border Grid.Column="0"
+                                        Width="66" Height="66"
+                                        CornerRadius="33"
+                                        BorderThickness="2"
+                                        VerticalAlignment="Center"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="BadgeFloat" Y="0"/>
+                                    </Border.RenderTransform>
+                                    <Border.Triggers>
+                                        <!-- crest-float: the badge gently bobs like it's hovering -->
+                                        <EventTrigger RoutedEvent="Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="BadgeFloat"
+                                                                     Storyboard.TargetProperty="Y"
+                                                                     To="-3" Duration="0:0:2"
+                                                                     AutoReverse="True"
+                                                                     RepeatBehavior="Forever">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <SineEase EasingMode="EaseInOut"/>
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Border.Triggers>
+                                    <Border.Background>
+                                        <RadialGradientBrush Center="0.5,0.45" GradientOrigin="0.5,0.45"
+                                                             RadiusX="0.6" RadiusY="0.6">
+                                            <GradientStop Color="#FF02010A" Offset="0.0"/>
+                                            <GradientStop Color="#FF000000" Offset="1.0"/>
+                                        </RadialGradientBrush>
+                                    </Border.Background>
+                                    <Border.BorderBrush>
+                                        <SolidColorBrush Color="#999E45B1"/>
+                                    </Border.BorderBrush>
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#FFC930C2" BlurRadius="22" ShadowDepth="0" Opacity="0.7"/>
+                                    </Border.Effect>
+                                    <ContentControl x:Name="IconBadge"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"/>
+                                </Border>
+
+                                <!-- Title -->
+                                <StackPanel Grid.Column="1"
+                                            Margin="16,0,0,0"
+                                            VerticalAlignment="Center">
+                                    <TextBlock x:Name="TitleText"
+                                               FontFamily="Cinzel, Constantia, Georgia, serif"
+                                               FontSize="24"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PanelTitleBrush}">
+                                        <TextBlock.Effect>
+                                            <DropShadowEffect Color="#FFB03AF0" BlurRadius="14" ShadowDepth="0" Opacity="0.4"/>
+                                        </TextBlock.Effect>
+                                    </TextBlock>
+                                    <!-- Animated divider: a flowing pink→blue→teal light river -->
+                                    <Rectangle Height="2" RadiusX="1" RadiusY="1"
+                                               Margin="0,10,2,0"
+                                               IsHitTestVisible="False">
+                                        <Rectangle.Fill>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0"
+                                                                 SpreadMethod="Repeat"
+                                                                 MappingMode="RelativeToBoundingBox">
+                                                <LinearGradientBrush.RelativeTransform>
+                                                    <TranslateTransform x:Name="DividerFlow" X="0"/>
+                                                </LinearGradientBrush.RelativeTransform>
+                                                <GradientStop Color="#00000000" Offset="0.0"/>
+                                                <GradientStop Color="#FFF852F0" Offset="0.3"/>
+                                                <GradientStop Color="#FF3695FF" Offset="0.55"/>
+                                                <GradientStop Color="#FF00DFF3" Offset="0.8"/>
+                                                <GradientStop Color="#00000000" Offset="1.0"/>
+                                            </LinearGradientBrush>
+                                        </Rectangle.Fill>
+                                        <Rectangle.Effect>
+                                            <DropShadowEffect Color="#FFC930C2" BlurRadius="10" ShadowDepth="0" Opacity="0.7"/>
+                                        </Rectangle.Effect>
+                                        <Rectangle.Triggers>
+                                            <EventTrigger RoutedEvent="Loaded">
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="DividerFlow"
+                                                                         Storyboard.TargetProperty="X"
+                                                                         From="-1" To="1"
+                                                                         Duration="0:0:3.5"
+                                                                         RepeatBehavior="Forever"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </EventTrigger>
+                                        </Rectangle.Triggers>
+                                    </Rectangle>
+                                </StackPanel>
+
+                                <Button Grid.Column="2"
+                                        VerticalAlignment="Top"
+                                        Style="{StaticResource CloseButton}"
+                                        Content="X"
+                                        Click="CloseButton_Click"
+                                        AutomationProperties.Name="Close panel"
+                                        ToolTip="Close (Escape)"/>
+                            </Grid>
+
+                            <!-- Panel-specific content injected here by code-behind -->
+                            <ContentControl x:Name="PanelContent" Grid.Row="1" Margin="16,4,16,16"
+                                            FontSize="{DynamicResource GlobalFontSize}"/>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

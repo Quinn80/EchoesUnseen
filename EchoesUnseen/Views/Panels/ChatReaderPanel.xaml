@@ -1,0 +1,103 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.ChatReaderPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="520" d:DesignWidth="560">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Privacy banner -->
+            <RowDefinition Height="Auto"/>  <!-- Controls -->
+            <RowDefinition Height="Auto"/>  <!-- Scan interval + message count -->
+            <RowDefinition Height="Auto"/>  <!-- Status -->
+            <RowDefinition Height="*"/>     <!-- Recently-read -->
+        </Grid.RowDefinitions>
+
+        <!-- Privacy banner -->
+        <Border Grid.Row="0"
+                Background="#114ADE80"
+                BorderBrush="#FF4ADE80"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,10"
+                Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🔒" VerticalAlignment="Center"/>
+                <TextBlock Foreground="White" VerticalAlignment="Center"
+                           Margin="8,0,0,0" TextWrapping="Wrap">
+                    Continuous local OCR of the chat region. Nothing leaves your computer.
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Controls row -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button Style="{StaticResource PrimaryButton}"
+                    Content="📍 Set Chat Region"
+                    Click="SetRegion_Click"/>
+            <ToggleButton x:Name="EnableToggle"
+                          Margin="8,0,0,0"
+                          Padding="14,6"
+                          Content="🔴 Start Reading"
+                          Background="#A41435"
+                          Foreground="White"
+                          BorderThickness="0"
+                          Cursor="Hand"
+                          Checked="EnableToggle_Checked"
+                          Unchecked="EnableToggle_Unchecked"/>
+            <Button Style="{StaticResource SecondaryButton}"
+                    Margin="8,0,0,0"
+                    Content="🗑 Clear"
+                    Click="Clear_Click"/>
+        </StackPanel>
+
+        <!-- Interval + count config -->
+        <Grid Grid.Row="2" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                <TextBlock Text="Scan interval (seconds)" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                           Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,4"/>
+                <Slider x:Name="IntervalSlider"
+                        Minimum="2" Maximum="10" Value="3.5"
+                        TickFrequency="0.5"
+                        ValueChanged="IntervalSlider_ValueChanged"/>
+                <TextBlock x:Name="IntervalLabel" Text="3.5s"
+                           Foreground="White" FontSize="{DynamicResource GlobalFontSizeSmall}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                <TextBlock Text="Read N newest messages" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                           Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,4"/>
+                <Slider x:Name="CountSlider"
+                        Minimum="1" Maximum="10" Value="3"
+                        TickFrequency="1" IsSnapToTickEnabled="True"
+                        ValueChanged="CountSlider_ValueChanged"/>
+                <TextBlock x:Name="CountLabel" Text="3 messages"
+                           Foreground="White" FontSize="{DynamicResource GlobalFontSizeSmall}"/>
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Grid.Row="3"
+                   x:Name="StatusText"
+                   Foreground="{DynamicResource MutedBrush}"
+                   TextWrapping="Wrap"
+                   Text="Set a chat region, then click Start Reading."
+                   Margin="0,0,0,8"/>
+
+        <!-- Recently read list -->
+        <Border Grid.Row="4"
+                Background="#22222B"
+                BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="RecentList"/>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

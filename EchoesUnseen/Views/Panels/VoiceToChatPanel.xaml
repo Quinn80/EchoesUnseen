@@ -1,0 +1,121 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.VoiceToChatPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="540" d:DesignWidth="560">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Privacy banner -->
+            <RowDefinition Height="Auto"/>  <!-- Mic button + timer -->
+            <RowDefinition Height="Auto"/>  <!-- Device + status -->
+            <RowDefinition Height="Auto"/>  <!-- Transcript preview + actions -->
+            <RowDefinition Height="*"/>     <!-- History -->
+        </Grid.RowDefinitions>
+
+        <!-- Privacy banner -->
+        <Border Grid.Row="0"
+                Background="#114ADE80"
+                BorderBrush="#FF4ADE80"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,10"
+                Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🔒" VerticalAlignment="Center"/>
+                <TextBlock x:Name="EngineBanner" Foreground="White" VerticalAlignment="Center"
+                           Margin="8,0,0,0" TextWrapping="Wrap"
+                           Text="100% local. Your voice never leaves your computer."/>
+            </StackPanel>
+        </Border>
+
+        <!-- The big mic button -->
+        <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,0,0,12">
+            <Button x:Name="MicButton"
+                    Style="{StaticResource JarvisMic}"
+                    Content="🎙"
+                    Tag="idle"
+                    Click="MicButton_Click"
+                    AutomationProperties.Name="Microphone. Click to start dictation, click again to stop."
+                    AutomationProperties.HelpText="When clicked, your speech will be transcribed and shown in the transcript box below."/>
+            <TextBlock x:Name="TimerText"
+                       Text="Click to record"
+                       Foreground="{DynamicResource MutedBrush}"
+                       HorizontalAlignment="Center"
+                       Margin="0,8,0,0"/>
+        </StackPanel>
+
+        <!-- Device + status -->
+        <TextBlock Grid.Row="2"
+                   x:Name="StatusText"
+                   Foreground="{DynamicResource MutedBrush}"
+                   FontSize="{DynamicResource GlobalFontSizeSmall}"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,12"/>
+
+        <!-- Transcript + actions -->
+        <Border Grid.Row="3"
+                Background="#22FF1A8A"
+                BorderBrush="{DynamicResource PrimaryBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12"
+                Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="Latest transcript" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"
+                           Margin="0,0,0,4"/>
+                <TextBox x:Name="TranscriptBox"
+                         Style="{StaticResource InputBox}"
+                         IsReadOnly="False"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         MinHeight="60"
+                         MaxHeight="120"
+                         VerticalScrollBarVisibility="Auto"
+                         Text=""
+                         AutomationProperties.Name="Latest transcript. Edit before copying if needed."/>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <Button Style="{StaticResource PrimaryButton}"
+                            Content="📋 Copy to Clipboard"
+                            Click="Copy_Click"
+                            AutomationProperties.Name="Copy transcript to clipboard"
+                            AutomationProperties.HelpText="Copies the transcript so you can paste it into Guild Wars 2 chat."/>
+                    <Button Style="{StaticResource SecondaryButton}"
+                            Margin="8,0,0,0"
+                            Content="🔊 Play Back"
+                            Click="Playback_Click"
+                            AutomationProperties.Name="Play transcript aloud"
+                            AutomationProperties.HelpText="Reads the transcript aloud through text-to-speech so you can verify it before copying."/>
+                    <Button Style="{StaticResource SecondaryButton}"
+                            Margin="8,0,0,0"
+                            Content="🗑 Clear"
+                            Click="Clear_Click"
+                            AutomationProperties.Name="Clear transcript"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- History -->
+        <Border Grid.Row="4"
+                Background="#22222B"
+                BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Recent transcripts"
+                           Foreground="White" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="HistoryList"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
