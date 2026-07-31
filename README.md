@@ -7,7 +7,7 @@
 <p align="center"><b>An accessibility overlay for Guild Wars 2 — built voice-first for blind and low-vision players.</b></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-B1.1-1f6feb" alt="Release B1.1">
+  <img src="https://img.shields.io/badge/release-b1.4-1f6feb" alt="Release b1.4">
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-0078D6" alt="Windows 10/11">
   <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
   <img src="https://img.shields.io/badge/license-MIT-3fb950" alt="MIT License">
@@ -19,13 +19,13 @@ Echoes Unseen runs as a transparent, click-through overlay on top of Guild Wars 
   <img src="EchoesUnseen/Resources/Images/hud-ring.png" alt="The Echoes Unseen radial HUD wheel" width="340">
 </p>
 
-> **Current release: B1.1** · Windows 10/11 (64-bit) · Free (donations welcome) · *more updates to come.*
+> **Current release: b1.4** · Windows 10/11 (64-bit) · Free (donations welcome) · *more updates to come.*
 
 ---
 
 ## Download & Run
 
-**[⬇ Download the latest release — `EchoesUnseen-B1.1.exe`](https://github.com/Quinn80/EchoesUnseen/releases/latest)**
+**[⬇ Download the latest release — `EchoesUnseen-b1.4.exe`](https://github.com/Quinn80/EchoesUnseen/releases/latest)**
 
 It's **self-contained — no .NET install needed.** Download it, then run it. Windows 10/11 (64-bit).
 
