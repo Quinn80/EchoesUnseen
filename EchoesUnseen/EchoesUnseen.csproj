@@ -7,6 +7,14 @@
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Stamp the build time into the assembly. Twice now a report has been analysed
+         against source that was not in the exe that produced it, and there was no way
+         to tell from the log. A timestamp settles it in one line. -->
+    <SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyyMMdd-HHmm"))</SourceRevisionId>
+    <!-- Publish the end-user build with  -p:Distribution=true  to show the
+         "Send feedback / crash report" button (hidden in the dev build). -->
+    <DefineConstants Condition="'$(Distribution)'=='true'">$(DefineConstants);DISTRIBUTION</DefineConstants>
     <RootNamespace>EchoesUnseen</RootNamespace>
     <AssemblyName>EchoesUnseen</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -20,13 +28,25 @@
     <!-- Beta line. The old "21.x" numbering belonged to the pre-rebuild WPF
          builds; this native rebuild ships as Beta 1.x so tester reports and the
          About tab agree. -->
-    <Version>1.1.0</Version>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
+    <Version>1.5.0</Version>
+    <AssemblyVersion>1.5.0.0</AssemblyVersion>
+    <FileVersion>1.5.0.0</FileVersion>
     <Company>Echoes Unseen</Company>
     <Product>Echoes Unseen</Product>
     <Description>Accessibility overlay companion for Guild Wars 2</Description>
   </PropertyGroup>
+
+  <!-- The feedback channel's webhook URL is a SECRET and is never committed. Supply it
+       only when publishing a build that should post reports:
+         dotnet publish ... -p:DiscordWebhook=https://discord.com/api/webhooks/...
+       On a dev machine, drop the URL into %APPDATA%\EchoesUnseen\discord-webhook.txt
+       instead. With neither, the Send button simply says no channel is configured. -->
+  <ItemGroup Condition="'$(DiscordWebhook)' != ''">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>DiscordWebhook</_Parameter1>
+      <_Parameter2>$(DiscordWebhook)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Audio capture (microphone) and tone generation (sonar) -->
@@ -44,7 +64,36 @@
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
     <PackageReference Include="Whisper.net" Version="1.9.1" />
     <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+    <!-- Optional higher-accuracy OCR engine (offline). eng.traineddata is
+         downloaded on first use, like the voices. The native libs are ALSO embedded
+         (below) and extracted at runtime, so the single .exe is self-contained. -->
+    <PackageReference Include="Tesseract" Version="5.2.0" />
+    <!-- RapidOCR: PP-OCRv5 mobile models through ONNX Runtime, Apache-2.0, entirely
+         offline. Chosen on measured evidence against real Guild Wars 2 hover captures,
+         where it found half again as many lines as Windows OCR with the lowest junk rate
+         of the three engines tried. The models themselves are
+         embedded below rather than left beside the binary, because there is no "beside"
+         in a single-file exe. -->
+    <PackageReference Include="RapidOcrNet" Version="4.2.0" />
   </ItemGroup>
+
+  <!-- OpenCV + RapidOCR hover targeting. The decisions live in Services/Hover/Fusion and are
+       judged by tools/HoverReplay against the recorded corpus before any change is heard.
+       In the app it is a setting (Enhanced Hover Targeting), on by default since b1.5.
+       OpenCV's OFFICIAL SLIM runtime: core, imgproc, imgcodecs and a few geometry modules;
+       no FFmpeg (so nothing LGPL), no video, no GUI, no DNN. Apache-2.0. -->
+  <ItemGroup>
+    <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
+    <PackageReference Include="OpenCvSharp4.runtime.win.slim" Version="4.13.0.20260627" />
+  </ItemGroup>
+
+  <!-- The RapidOcrNet package copies its models next to the binary. We carry them
+       INSIDE the exe instead (see the EmbeddedResource entries below), so the loose
+       copies would be 13.7 MB of duplicate sitting beside a single-file app that is
+       supposed to be one file. -->
+  <Target Name="DropLooseRapidOcrModels" AfterTargets="CopyModelsPublish">
+    <RemoveDir Directories="$(PublishDir)models" />
+  </Target>
 
   <!-- Static assets (Piper voice binaries + models, songs library, optional app icon) -->
   <ItemGroup>
@@ -54,6 +103,19 @@
     <!-- Embedded so a single-file exe carries the starter songs with no loose
          Songs folder; also copied to output for normal folder builds. -->
     <EmbeddedResource Include="Songs\bundled-songs.json" />
+    <!-- Tesseract native libs embedded so the single-file exe can extract them at
+         runtime (the package otherwise ships them as loose x64/ files). -->
+    <EmbeddedResource Include="Resources\TessNative\leptonica-1.82.0.dll" />
+    <EmbeddedResource Include="Resources\TessNative\tesseract50.dll" />
+    <EmbeddedResource Include="Resources\Nvda\nvdaControllerClient64.dll" />
+    <!-- PP-OCRv5 latin models (13.7 MB), embedded for the same reason as the Tesseract
+         natives above: the NuGet copies them next to the binary, and a single-file exe
+         has no next-to. Extracted once to AppData on first hover. -->
+    <EmbeddedResource Include="Resources\RapidOcr\ch_PP-OCRv5_mobile_det.onnx" />
+    <EmbeddedResource Include="Resources\RapidOcr\ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx" />
+    <EmbeddedResource Include="Resources\RapidOcr\latin_PP-OCRv5_rec_mobile_infer.onnx" />
+    <EmbeddedResource Include="Resources\RapidOcr\ppocrv5_latin_dict.txt" />
+    <EmbeddedResource Include="Resources\Ahk\AutoHotkey64.exe" />
     <None Include="Songs\bundled-songs.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

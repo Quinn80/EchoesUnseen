@@ -254,7 +254,7 @@ public partial class PanelHost : UserControl
     {
         "screen-reader" => ("Screen Reader",   new ScreenReaderPanel()),
         "heart-quest"   => ("Heart Quests",    new HeartQuestPanel()),
-        "trail-nav"     => ("Trail Navigator", new TrailNavigatorPanel()),
+        "trail-nav"     => ("Sonar Trails",    new TrailNavigatorPanel()),
         "chat-reader"   => ("Chat Reader",     new ChatReaderPanel()),
         "voice-chat"    => ("Voice to Chat",   new VoiceToChatPanel()),
         "music"         => ("Music Player",    new MusicPlayerPanel()),
@@ -264,6 +264,8 @@ public partial class PanelHost : UserControl
         "trading"       => ("Trading Post",    new TradingPostPanel()),
         "build"         => ("Build & Gear",    new BuildGearPanel()),
         "map"           => ("Map Completion",  new MapCompletionPanel()),
+        "events"        => ("Event Timers",    new EventTimersPanel()),
+        "vault"         => ("Wizard's Vault",  new WizardsVaultPanel()),
         "settings"      => ("Settings",        new SettingsPanel()),
         _               => ($"Unknown: {id}",  new PlaceholderPanel("Unknown", $"No panel registered for id '{id}'.")),
     };
@@ -326,6 +328,24 @@ public partial class PanelHost : UserControl
             PanelContent.Content = null;
         }
         catch (Exception ex) { CrashLogger.Log("PanelHost.ShutdownPanel", ex); }
+    }
+
+    /// <summary>
+    /// The card's bounds in SCREEN (device) pixels, so MainWindow can let clicks
+    /// OUTSIDE the card fall through to the game while a panel is open. Both
+    /// corners go through PointToScreen so the result is device pixels, matching
+    /// GetCursorPos — no DPI unit mixing.
+    /// </summary>
+    public System.Windows.Rect GetCardScreenRect()
+    {
+        try
+        {
+            if (Card is null || Card.ActualWidth <= 0) return System.Windows.Rect.Empty;
+            var tl = Card.PointToScreen(new System.Windows.Point(0, 0));
+            var br = Card.PointToScreen(new System.Windows.Point(Card.ActualWidth, Card.ActualHeight));
+            return new System.Windows.Rect(tl, br);
+        }
+        catch { return System.Windows.Rect.Empty; }
     }
 
     public void SetDefaultPlacement(System.Windows.Rect wheelRect, System.Windows.Size windowSize)

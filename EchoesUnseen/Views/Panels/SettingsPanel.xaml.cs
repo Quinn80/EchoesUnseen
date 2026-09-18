@@ -35,6 +35,8 @@ public partial class SettingsPanel : UserControl, IPanel
     private DispatcherTimer? _mumbleTimer;
     private bool _loaded;
 
+    private const string HoverTargetingLabel = "Enhanced Hover Targeting - OpenCV plus RapidOCR (recommended)";
+
     public SettingsPanel()
     {
         InitializeComponent();
@@ -72,6 +74,9 @@ public partial class SettingsPanel : UserControl, IPanel
     {
         _loaded = false;
         var s = App.Settings.Current;
+
+        // Screen-reader passthrough
+        NvdaToggle.IsChecked = s.SpeakThroughNvda;
 
         // Voice engine
         foreach (ComboBoxItem item in EngineCombo.Items)
@@ -137,10 +142,305 @@ public partial class SettingsPanel : UserControl, IPanel
     /// a table rather than hand-written XAML so a new feature is one line here and
     /// automatically gets a label, help text, spoken confirmation and persistence.
     /// </summary>
+    private void Wvw_Changed(object sender, RoutedEventArgs e)
+    {
+        if (WvwToggle == null) return;
+        App.Settings.Current.WvwEnabled = WvwToggle.IsChecked == true;
+        App.Settings.NotifyChanged();
+    }
+
+    private void WvwTeam_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (WvwTeamCombo.SelectedItem is not ComboBoxItem it) return;
+        App.Settings.Current.WvwTeam = (string)it.Tag;
+        App.Settings.NotifyChanged();
+    }
+
+    private void Nvda_Changed(object sender, RoutedEventArgs e)
+    {
+        if (NvdaToggle == null) return;
+        App.Settings.Current.SpeakThroughNvda = NvdaToggle.IsChecked == true;
+        App.Settings.NotifyChanged();
+        if (NvdaToggle.IsChecked == true && !Services.NvdaOutput.IsRunning())
+            _tts?.SpeakAsync("Screen reader speech is on, but NVDA is not running right now. I'll use my own voice until it is.");
+    }
+
+    // ── Feedback (distribution build) ─────────────────────────────────────────
+    /// <summary>Where feedback goes. A dedicated address keeps the developer's
+    /// personal email private in the public build. Change this one line to retarget.</summary>
+    private const string FeedbackEmail = "echoesunseen.feedback@gmail.com";
+
+    private async void Feedback_Click(object sender, RoutedEventArgs e)
+    {
+        var msg = FeedbackBox.Text?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(msg))
+        {
+            FeedbackStatus.Text = "Type your message first.";
+            _tts?.SpeakAsync("Please type your feedback first.");
+            return;
+        }
+
+        // Ask the sending rules BEFORE assembling anything, so "wait two minutes" or
+        // "say a bit more" arrives immediately instead of after a log has been packed up.
+        if (Services.DiscordFeedbackService.IsConfigured)
+        {
+            var (may, whyNot) = Services.DiscordFeedbackService.MaySend(msg);
+            if (!may)
+            {
+                FeedbackStatus.Text = whyNot;
+                _tts?.SpeakAsync(whyNot);
+                return;
+            }
+        }
+
+        var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Echoes Unseen — feedback / report");
+        sb.AppendLine($"Version: {ver}");
+        sb.AppendLine($"OS: {Environment.OSVersion}  .NET {Environment.Version}");
+        sb.AppendLine($"Time: {DateTime.Now}");
+        sb.AppendLine();
+        sb.AppendLine(msg);
+        if (FeedbackIncludeLog.IsChecked == true)
+        {
+            sb.AppendLine();
+            sb.AppendLine("----- crash.log (recent) -----");
+            sb.AppendLine(Tail(Services.CrashLogger.LogPath, 4000));
+            sb.AppendLine("----- diagnostics.log (recent) -----");
+            sb.AppendLine(Tail(Services.DiagLog.LogPath, 4000));
+        }
+        var report = sb.ToString();
+
+        // THE FEEDBACK CHANNEL FIRST.
+        //
+        // Email needed a mailbox that existed and that someone read; the address baked
+        // in below never had one, so a user pressing Send got a bounce and their report
+        // was simply lost. A webhook posts into the project's own Discord channel, where
+        // reports arrive in order and keep their attachments.
+        //
+        // Never silently: this leaves the machine and can carry pictures of the screen,
+        // so it is spoken aloud and confirmed every single time.
+        var zip = NewestBugReportZip();
+        if (Services.DiscordFeedbackService.IsConfigured)
+        {
+            var what = zip == null
+                ? "your message, and the log if you ticked the box"
+                : "your message, the log, and your most recent screen recording";
+
+            _tts?.SpeakAsync($"Send this to the Echoes Unseen feedback channel? It will include {what}.");
+            var answer = System.Windows.MessageBox.Show(
+                $"Send this report to the Echoes Unseen feedback channel on Discord?\n\n" +
+                $"It will include {what}.\n\n" +
+                (zip == null ? "" : $"Recording: {System.IO.Path.GetFileName(zip)}\n\n") +
+                "Screen recordings can show your chat, your character name and anything else " +
+                "that was on screen. Nothing is sent unless you choose Yes.",
+                "Send feedback", System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Question);
+
+            if (answer != System.Windows.MessageBoxResult.Yes)
+            {
+                FeedbackStatus.Text = "Not sent. Your copy is saved on your Desktop.";
+                _tts?.SpeakAsync("Nothing was sent.");
+                return;
+            }
+
+            FeedbackStatus.Text = "Sending\u2026";
+            _tts?.SpeakAsync("Sending.");
+            var (ok, message) = await Services.DiscordFeedbackService.SendAsync(
+                $"**Feedback** \u2014 v{ver}", report, zip);
+            FeedbackStatus.Text = message;
+            _tts?.SpeakAsync(message);
+            if (ok) { FeedbackBox.Text = ""; return; }
+            // Couldn't reach it — fall through and let them send it by email instead.
+        }
+
+        // Save a copy to the Desktop and put the full text on the clipboard, then
+        // open the user's mail client (they press Send — nothing auto-sends).
+        string saved = "";
+        try
+        {
+            saved = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                $"EchoesUnseen-feedback-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+            System.IO.File.WriteAllText(saved, report);
+        }
+        catch { saved = ""; }
+        try { Clipboard.SetText(report); } catch { }
+
+        var subject = Uri.EscapeDataString("Echoes Unseen feedback");
+        // mailto bodies are size-limited, so send the message + a note; the full
+        // report (with logs) rides on the clipboard and the saved file.
+        var shortBody = report.Length <= 1500
+            ? report
+            : msg + "\r\n\r\n(The full report — including the log — is on your clipboard; paste it here. A copy was also saved to your Desktop.)";
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+                $"mailto:{FeedbackEmail}?subject={subject}&body={Uri.EscapeDataString(shortBody)}")
+                { UseShellExecute = true });
+        }
+        catch { }
+
+        FeedbackStatus.Text = saved.Length > 0
+            ? "Your email app is opening. The full report is on your clipboard and saved to your Desktop — paste or attach it, then press Send."
+            : "Your email app is opening. The full report is on your clipboard — paste it in, then press Send.";
+        _tts?.SpeakAsync("Your email app is opening. The report is on your clipboard. Paste it into the email, then press send.");
+    }
+
+    /// <summary>The recording to attach: the one made this session if there is one,
+    /// otherwise the newest in Downloads — because people record the problem, then go
+    /// looking for where to report it, and shouldn't have to hunt for the file.
+    /// Anything older than an hour is ignored, so a week-old report never rides along
+    /// with an unrelated message.</summary>
+    private static string? NewestBugReportZip()
+    {
+        try
+        {
+            var own = Services.BugRecorderService.LastReportZip;
+            if (own != null && System.IO.File.Exists(own)) return own;
+
+            var dl = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            if (!System.IO.Directory.Exists(dl)) return null;
+
+            var newest = new System.IO.DirectoryInfo(dl)
+                .GetFiles("EchoesUnseen-bug-*.zip")
+                .OrderByDescending(f => f.LastWriteTime)
+                .FirstOrDefault();
+
+            if (newest == null) return null;
+            return DateTime.Now - newest.LastWriteTime < TimeSpan.FromHours(1) ? newest.FullName : null;
+        }
+        catch (Exception ex) { CrashLogger.Log("NewestBugReportZip", ex); return null; }
+    }
+
+    /// <summary>Last <paramref name="maxChars"/> characters of a text file (for reports).</summary>
+    private static string Tail(string path, int maxChars)
+    {
+        try
+        {
+            if (!System.IO.File.Exists(path)) return "(none)";
+            var text = System.IO.File.ReadAllText(path);
+            return text.Length <= maxChars ? text : "…" + text[^maxChars..];
+        }
+        catch { return "(unreadable)"; }
+    }
+
+    // ── Local AI ──────────────────────────────────────────────────────────────
+    private void OcrEngine_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (OcrEngineCombo.SelectedItem is not ComboBoxItem it) return;
+        App.Settings.Current.OcrEngine = (string)it.Tag;
+        App.Settings.NotifyChanged();
+        if ((string)it.Tag == "tesseract") _ = Services.TesseractOcrService.EnsureReadyAsync();
+    }
+
+    private void Diag_Changed(object sender, RoutedEventArgs e)
+    {
+        if (DiagToggle == null) return;
+        App.Settings.Current.DiagLogging = DiagToggle.IsChecked == true;
+        App.Settings.NotifyChanged();
+    }
+
+    private void ChatNames_Changed(object sender, RoutedEventArgs e)
+    {
+        if (ChatNamesToggle == null) return;
+        App.Settings.Current.ChatSpeakNames = ChatNamesToggle.IsChecked == true;
+        App.Settings.NotifyChanged();
+    }
+
+    private void BugRec_Changed(object sender, RoutedEventArgs e)
+    {
+        if (BugRecToggle == null) return;
+        App.Settings.Current.BugRecorderEnabled = BugRecToggle.IsChecked == true;
+        App.Settings.NotifyChanged();
+    }
+
+    /// <summary>Start or stop a recording from the panel. The same action is on a
+    /// shortcut, because by the time you have opened Settings to press this the bug you
+    /// wanted to capture has usually stopped happening.</summary>
+    private void BugRec_Click(object sender, RoutedEventArgs e)
+    {
+        var tts = (System.Windows.Application.Current?.MainWindow as EchoesUnseen.MainWindow)?.Tts;
+        if (!App.Settings.Current.BugRecorderEnabled)
+        {
+            BugRecStatus.Text = "Switch on \u201cAllow bug recording\u201d first.";
+            _ = tts?.SpeakAsync("Bug recording is switched off.");
+            return;
+        }
+
+        if (Services.BugRecorderService.IsRecording)
+        {
+            var zip = Services.BugRecorderService.Stop();
+            BugRecButton.Content = "\u23fa Start recording";
+            BugRecStatus.Text = zip == null ? "Recording stopped, but nothing could be saved."
+                                            : "Saved: " + System.IO.Path.GetFileName(zip);
+            _ = tts?.SpeakAsync(zip == null
+                ? "Recording stopped, but the report could not be saved."
+                : "Recording stopped. Bug report saved to Downloads.");
+            return;
+        }
+
+        var dir = Services.BugRecorderService.Start();
+        BugRecButton.Content = "\u23f9 Stop recording";
+        BugRecStatus.Text = dir == null
+            ? "Could not start recording."
+            : $"Recording\u2026 press again to stop, or it stops itself after {Services.BugRecorderService.MaxSeconds / 60} minutes.";
+        _ = tts?.SpeakAsync(dir == null ? "Could not start recording." : "Bug recording started.");
+    }
+
+    private void OpenDownloads_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dl = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dl) { UseShellExecute = true });
+        }
+        catch (Exception ex) { CrashLogger.Log("OpenDownloads", ex); }
+    }
+
+    private void OpenDiag_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var path = Services.DiagLog.LogPath;
+            if (!System.IO.File.Exists(path)) Services.DiagLog.Clear();
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+        }
+        catch (Exception ex) { CrashLogger.Log("OpenDiag", ex); }
+    }
+
+    private void ClearDiag_Click(object sender, RoutedEventArgs e)
+    {
+        Services.DiagLog.Clear();
+        _tts?.SpeakAsync("Diagnostics log cleared.");
+    }
+
     private void BuildFeatureToggles()
     {
         FeatureToggles.Children.Clear();
         var s = App.Settings.Current;
+
+        // Feedback section — only in the end-user distribution build.
+        // Show it in the dev build too whenever a feedback channel is actually wired up,
+        // otherwise the only way to test sending is to cut a distribution build first.
+        FeedbackSection.Visibility =
+            (App.IsDistribution || Services.DiscordFeedbackService.IsConfigured)
+                ? Visibility.Visible : Visibility.Collapsed;
+
+        // WvW / PvP controls (populated once).
+        WvwToggle.IsChecked = s.WvwEnabled;
+        foreach (ComboBoxItem it in WvwTeamCombo.Items)
+            if ((string)it.Tag == s.WvwTeam) { WvwTeamCombo.SelectedItem = it; break; }
+        if (WvwTeamCombo.SelectedIndex < 0) WvwTeamCombo.SelectedIndex = 0;
+
+        foreach (ComboBoxItem it in OcrEngineCombo.Items)
+            if ((string)it.Tag == s.OcrEngine) { OcrEngineCombo.SelectedItem = it; break; }
+        if (OcrEngineCombo.SelectedIndex < 0) OcrEngineCombo.SelectedIndex = 0;
+        DiagToggle.IsChecked = s.DiagLogging;
+        BugRecToggle.IsChecked = s.BugRecorderEnabled;
+        ChatNamesToggle.IsChecked = s.ChatSpeakNames;
 
         (string Label, string Help, Func<bool> Get, Action<bool> Set)[] features =
         {
@@ -151,6 +451,18 @@ public partial class SettingsPanel : UserControl, IPanel
             ("Read what the mouse rests on",
              "Speaks buttons, labels and values inside panels as you hover them.",
              () => s.HoverToRead, v => s.HoverToRead = v),
+
+            ("Read GAME items on hover",
+             "Rest the mouse over a trading-post row, inventory item or tooltip in Guild Wars 2 and it's read aloud. Tooltips and large text read best; tiny dim labels are hit-or-miss (the game exposes no text, so it's reading pixels). The read-under-cursor hotkey still works any time.",
+             () => s.HoverReadGame, v => s.HoverReadGame = v),
+
+            (HoverTargetingLabel,
+             "Point at one thing, hear that one thing: a reward card with its price, a merchant row with its own price, an inventory slot with its tooltip, a button. OpenCV works out where the object begins and ends, RapidOCR reads the text inside it, and both run on this computer. Turn this off to use Classic Hover Targeting, which reads the text nearest the pointer.",
+             () => s.HoverTargetingFusion, Services.Hover.HoverTargeting.Choose),
+
+            ("Speak the wheel with the app voice",
+             "Announce wheel buttons with Echoes Unseen's own voice. If you use a screen reader like NVDA that already reads the buttons, turn this off so you don't hear each one twice. (Alt+arrow navigation always speaks, since a screen reader doesn't cover it.)",
+             () => s.SpeakHudNav, v => s.SpeakHudNav = v),
 
             ("Panel open and close sounds",
              "Soft audio cues when a tool opens or closes.",
@@ -182,7 +494,11 @@ public partial class SettingsPanel : UserControl, IPanel
                 if (!_loaded) return;
                 set(on);
                 App.Settings.NotifyChanged();
-                _tts?.SpeakAsync($"{label}: {(on ? "on" : "off")}.");
+                // The targeting switch says which reader is now answering, in words that
+                // cannot be mistaken for the other one.
+                _tts?.SpeakAsync(label == HoverTargetingLabel
+                    ? Services.Hover.HoverTargeting.Announcement(on)
+                    : $"{label}: {(on ? "on" : "off")}.");
             }
             box.Checked   += (_, _) => Changed(true);
             box.Unchecked += (_, _) => Changed(false);
@@ -423,6 +739,31 @@ public partial class SettingsPanel : UserControl, IPanel
             if (VoiceCombo.SelectedIndex < 0 && VoiceCombo.Items.Count > 0)
                 VoiceCombo.SelectedIndex = 0;
 
+            // Same voices for chat, plus an entry meaning "don't use a separate one".
+            //
+            // REMEMBER THE CHOICE BEFORE TOUCHING THE COMBO. Setting SelectedIndex
+            // raises SelectionChanged, and that handler SAVES whatever is selected -
+            // so selecting the "Same as main voice" row here wrote an empty voice to
+            // settings, and the loop underneath then restored from the value it had
+            // just destroyed. Quinn picked a chat voice, it worked, and it was gone
+            // the next time she opened Settings; she reported it twice before I
+            // looked in the right place. The main voice combo never had the bug
+            // because its handler returns early while loading.
+            var wanted = App.Settings.Current.ChatVoiceId;
+
+            _populatingVoices = true;
+            try
+            {
+                ChatVoiceCombo.Items.Clear();
+                ChatVoiceCombo.Items.Add(new VoiceInfo { Id = "", Name = "Same as main voice", Engine = engine });
+                foreach (var v in voices) ChatVoiceCombo.Items.Add(v);
+
+                ChatVoiceCombo.SelectedIndex = 0;
+                foreach (VoiceInfo v in ChatVoiceCombo.Items)
+                    if (v.Id == wanted) { ChatVoiceCombo.SelectedItem = v; break; }
+            }
+            finally { _populatingVoices = false; }
+
             SetVoiceStatus(voices.Count > 0
                 ? $"{voices.Count} {engine} voice(s) available."
                 : engine == "elevenlabs"
@@ -448,6 +789,24 @@ public partial class SettingsPanel : UserControl, IPanel
             BuildPiperManager();
             UpdatePiperManagerVisibility(engine);
         }
+    }
+
+    /// <summary>True while the voice combos are being filled, so their change handlers
+    /// know the selection is ours and not the user's, and do not save it.</summary>
+    private bool _populatingVoices;
+
+    private void ChatVoiceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_populatingVoices) return;              // our own selection, not a choice
+        if (ChatVoiceCombo?.SelectedItem is not VoiceInfo v) return;
+        App.Settings.Current.ChatVoiceId = v.Id;
+        App.Settings.Current.ChatVoiceEngine = string.IsNullOrEmpty(v.Id) ? "" : v.Engine;
+        App.Settings.NotifyChanged();
+        _tts?.SpeakAsync(string.IsNullOrEmpty(v.Id)
+            ? "Chat will use your main voice."
+            : "This is how other players will sound.",
+            engineOverride: string.IsNullOrEmpty(v.Id) ? null : v.Engine,
+            voiceOverride: v.Id);
     }
 
     private void VoiceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -862,12 +1221,28 @@ public partial class SettingsPanel : UserControl, IPanel
         App.Settings.Current.ThemeId = theme.Id;
         App.Settings.NotifyChanged();
 
-        // Apply it live. DynamicResource bindings in every panel's XAML pick
-        // up the new colors automatically — no reload required.
-        ThemeService.Apply(theme);
+        // High contrast forces white-on-black OVER the theme, so a theme change
+        // looked like it did nothing. Choosing a coloured theme clearly means the
+        // user wants to see colours, so turn High Contrast off (and keep the
+        // Features checkbox in sync). They can switch it back on any time.
+        bool turnedOffHc = false;
+        if (App.Settings.Current.HighContrast)
+        {
+            App.Settings.Current.HighContrast = false;
+            ThemeService.ApplyHighContrast(false);
+            turnedOffHc = true;
+        }
 
-        // Update the description text under the dropdown
+        // Apply it live. DynamicResource bindings in every panel and popup pick
+        // up the new colours automatically; the HUD re-tints itself via
+        // ThemeService.ThemeChanged (see RadialHud).
+        ThemeService.Apply(theme);
+        App.Settings.NotifyChanged();
+
         ThemeDescription.Text = theme.Description;
+        _tts?.SpeakAsync(turnedOffHc
+            ? $"{theme.Name} theme applied. High contrast turned off so the colours show."
+            : $"{theme.Name} theme applied.");
     }
 
     private void AccessModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

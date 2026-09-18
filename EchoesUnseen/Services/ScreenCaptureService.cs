@@ -55,6 +55,54 @@ public static class ScreenCaptureService
     private const int SRCCOPY = 0x00CC0020;
 
     /// <summary>
+    /// Capture a screen rectangle as a DOWNSCALED JPEG.
+    ///
+    /// For bug reports we want many frames, not one perfect one. A full-resolution PNG
+    /// of a 2480x1680 screen is well over a megabyte; the same frame at 1600 wide as
+    /// quality-72 JPEG is a fraction of that and still shows a trail clearly. Two
+    /// minutes of PNG would be a gigabyte and unusable; as JPEG it is a few tens of
+    /// megabytes and zips down further.
+    /// </summary>
+    public static byte[]? CaptureJpeg(int x, int y, int width, int height, int maxWidth, int quality)
+    {
+        var png = CapturePng(x, y, width, height);
+        if (png == null) return null;
+        try
+        {
+            using var src = new Bitmap(new MemoryStream(png));
+            int w = src.Width, h = src.Height;
+            if (maxWidth > 0 && w > maxWidth)
+            {
+                h = (int)Math.Round(h * (maxWidth / (double)w));
+                w = maxWidth;
+            }
+
+            using var dst = new Bitmap(w, h);
+            using (var g = Graphics.FromImage(dst))
+            {
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.DrawImage(src, 0, 0, w, h);
+            }
+
+            var codec = ImageCodecInfo.GetImageEncoders()
+                .FirstOrDefault(c => c.FormatID == ImageFormat.Jpeg.Guid);
+            if (codec == null) return png;
+
+            using var ps = new EncoderParameters(1);
+            ps.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality,
+                                               (long)Math.Clamp(quality, 20, 95));
+            using var ms = new MemoryStream();
+            dst.Save(ms, codec, ps);
+            return ms.ToArray();
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.Log("ScreenCaptureService.CaptureJpeg", ex);
+            return png;                       // better a big frame than none
+        }
+    }
+
+    /// <summary>
     /// Capture the given screen rectangle and return it as PNG-encoded bytes.
     /// Returns null if the rectangle is empty or capture failed.
     /// </summary>
@@ -106,15 +154,11 @@ public static class ScreenCaptureService
     /// </summary>
     public static byte[]? CapturePng(Rect dipRect)
     {
-        // Rough conversion — for per-monitor DPI accuracy, prefer the explicit pixel overload
-        var dpi = System.Windows.Media.VisualTreeHelper.GetDpi(
-            System.Windows.Application.Current.MainWindow ?? new System.Windows.Window());
-        var scaleX = dpi.DpiScaleX;
-        var scaleY = dpi.DpiScaleY;
-        return CapturePng(
-            (int)(dipRect.X * scaleX),
-            (int)(dipRect.Y * scaleY),
-            (int)(dipRect.Width * scaleX),
-            (int)(dipRect.Height * scaleY));
+        // Uses the scaling of the monitor the rectangle is actually on. It used to take
+        // the DPI of the app's own main window, which is right only while every screen
+        // agrees - a laptop at 150% beside an external at 100% got one of them wrong,
+        // and the grab landed somewhere other than the region the user drew.
+        var r = ScreenMetrics.DipToPhysical(dipRect);
+        return CapturePng((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height);
     }
 }

@@ -19,6 +19,14 @@
         <views:RadialHud x:Name="RadialHud"
                          AutomationProperties.Name="Radial HUD with 12 panel buttons"/>
 
+        <!-- Visible marker-pack overlay — projects imported markers/trails onto the
+             screen. Not interactive; clicks pass through. Sits under the HUD. -->
+        <views:MarkerOverlay x:Name="Markers"/>
+
+
+        <!-- Guitar-Hero music guide, anchored above the skill bar. -->
+        <views:GuideOverlay x:Name="Guide"/>
+
         <!-- PanelHost lives here — an open panel is injected into this layer at runtime -->
         <ContentControl x:Name="PanelHost" IsHitTestVisible="True"
                         AutomationProperties.Name="Open panel"/>

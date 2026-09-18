@@ -1,0 +1,80 @@
+<UserControl x:Class="EchoesUnseen.Views.Panels.EventTimersPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="520" d:DesignWidth="560">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="Auto"/>  <!-- Controls -->
+            <RowDefinition Height="Auto"/>  <!-- Status -->
+            <RowDefinition Height="*"/>     <!-- Upcoming list -->
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Background="#22FFC400"
+                BorderBrush="#FFFFC400"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,10"
+                Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock Text="⏰ Event Timers"
+                           Foreground="White" FontWeight="SemiBold" FontSize="16"/>
+                <TextBlock Text="World bosses and metas off the game's fixed clock. You'll get a chime and a heads-up a few minutes before each one."
+                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"
+                           FontSize="{DynamicResource GlobalFontSizeSmall}"/>
+            </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Row="1" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <Button Style="{StaticResource PrimaryButton}"
+                        Content="🔊 Announce next events"
+                        Click="AnnounceNext_Click"/>
+                <Button Style="{StaticResource SecondaryButton}"
+                        Margin="8,0,0,0"
+                        Content="⟳ Refresh"
+                        Click="Refresh_Click"
+                        ToolTip="Recalculate the countdowns"/>
+            </StackPanel>
+
+            <CheckBox x:Name="AlertsToggle" Margin="2,10,0,0"
+                      Content="Chime and announce before events start"
+                      Foreground="White"
+                      Checked="Alerts_Changed" Unchecked="Alerts_Changed"/>
+
+            <StackPanel Orientation="Horizontal" Margin="2,8,0,0">
+                <TextBlock Text="Warn me" Foreground="White" VerticalAlignment="Center"/>
+                <Slider x:Name="LeadSlider" Width="180" Minimum="1" Maximum="15"
+                        TickFrequency="1" IsSnapToTickEnabled="True"
+                        VerticalAlignment="Center" Margin="8,0,8,0"
+                        ValueChanged="Lead_Changed"/>
+                <TextBlock x:Name="LeadLabel" Text="5 minutes" Foreground="White"
+                           VerticalAlignment="Center" MinWidth="80"/>
+            </StackPanel>
+
+            <TextBlock Text="More events can be added to meta-schedule.json in the app data folder — ask and I'll expand the list."
+                       Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"
+                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="2,8,0,0"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="2" x:Name="StatusText"
+                   Foreground="{DynamicResource MutedBrush}"
+                   TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+        <Border Grid.Row="3"
+                Background="#22222B"
+                BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="EventsList"/>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

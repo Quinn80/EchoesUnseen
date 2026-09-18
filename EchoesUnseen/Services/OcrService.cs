@@ -1,4 +1,5 @@
 using System.IO;
+using WpfRect = System.Windows.Rect;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
 using Windows.Storage.Streams;
@@ -40,6 +41,14 @@ public static class OcrService
     {
         if (pngBytes == null || pngBytes.Length == 0) return "";
 
+        // Route to Tesseract when chosen. If it isn't downloaded yet, kick off the
+        // one-time download and use Windows OCR for now; it switches over once ready.
+        if (App.Settings.Current.OcrEngine == "tesseract")
+        {
+            if (TesseractOcrService.IsReady) return await TesseractOcrService.ReadAsync(pngBytes);
+            _ = TesseractOcrService.EnsureReadyAsync();
+        }
+
         try
         {
             // 0. Condition the image first. Windows OCR is built for document-
@@ -76,6 +85,7 @@ public static class OcrService
 
             // 4. Recognize
             var result = await engine.RecognizeAsync(softwareBitmap);
+            DiagLog.Ocr("read", "windows", softwareBitmap.PixelWidth, softwareBitmap.PixelHeight, result?.Text ?? "");
             return result?.Text ?? "";
         }
         catch (Exception ex)
@@ -95,14 +105,38 @@ public static class OcrService
     /// same text get re-read. OcrResult.Lines uses the engine's own layout
     /// analysis and keeps one chat message per entry.
     /// </summary>
-    public static async Task<List<string>> ReadLinesAsync(byte[] pngBytes)
+    /// <param name="forceWindows">
+    /// Skip the configured engine and use Windows OCR. For text drawn INTO the world -
+    /// player nameplates, interaction prompts, map markers - where Tesseract, trained
+    /// on scanned pages, returns nothing at all and Windows OCR, trained on scene
+    /// text, reads it.
+    /// </param>
+    /// <summary>
+    /// Where each line from the last <see cref="ReadLinesAsync"/> sat, as a fraction of
+    /// the picture (0..1). Same order and length as the returned list. Only filled by
+    /// the Windows engine, which is the one that reports geometry.
+    /// </summary>
+    public static List<WpfRect>? LastLineBoxes { get; private set; }
+
+    public static async Task<List<string>> ReadLinesAsync(
+        byte[] pngBytes,
+        TesseractOcrService.Layout layout = TesseractOcrService.Layout.Block,
+        bool forceWindows = false,
+        int? upscaleOverride = null)
     {
         var lines = new List<string>();
+        LastLineBoxes = null;      // stale geometry is worse than none
         if (pngBytes == null || pngBytes.Length == 0) return lines;
+
+        if (!forceWindows && App.Settings.Current.OcrEngine == "tesseract")
+        {
+            if (TesseractOcrService.IsReady) return await TesseractOcrService.ReadLinesAsync(pngBytes, layout);
+            _ = TesseractOcrService.EnsureReadyAsync();
+        }
 
         try
         {
-            pngBytes = ImagePrep.EnhanceForOcr(pngBytes);
+            pngBytes = ImagePrep.EnhanceForOcr(pngBytes, upscaleOverride: upscaleOverride);
 
             using var stream = new InMemoryRandomAccessStream();
             using (var writer = new DataWriter(stream))
@@ -124,11 +158,41 @@ public static class OcrService
             var result = await engine.RecognizeAsync(softwareBitmap);
             if (result?.Lines == null) return lines;
 
+
+            double imgW = softwareBitmap.PixelWidth, imgH = softwareBitmap.PixelHeight;
+            LastLineBoxes = new List<WpfRect>();
+
             foreach (var line in result.Lines)
             {
                 var text = line.Text?.Trim();
-                if (!string.IsNullOrWhiteSpace(text)) lines.Add(text);
+                if (string.IsNullOrWhiteSpace(text)) continue;
+                lines.Add(text);
+
+                // WHERE the line was, as a fraction of the picture, so a caller can ask
+                // which line the pointer is actually on without knowing anything about
+                // the upscale factor. Union of the word rectangles - OcrLine itself
+                // does not carry one.
+                double l = double.MaxValue, t = double.MaxValue, r = 0, b = 0;
+                foreach (var word in line.Words)
+                {
+                    var wr = word.BoundingRect;
+                    l = Math.Min(l, wr.Left);   t = Math.Min(t, wr.Top);
+                    r = Math.Max(r, wr.Right);  b = Math.Max(b, wr.Bottom);
+                }
+                LastLineBoxes.Add(l <= r && imgW > 0 && imgH > 0
+                    ? new WpfRect(l / imgW, t / imgH, (r - l) / imgW, (b - t) / imgH)
+                    : new WpfRect(0, 0, 1, 1));   // no words: treat as "everywhere"
             }
+
+            // HOW BIG IS THE TEXT, REALLY?
+            //
+            // Quinn plays at Larger interface size with display scaling on; the next
+            // person will not. The median line height, divided back out of the upscale,
+            // is the height of a line of text in the untouched grab - the one number
+            // that says whether this player's interface is small or huge. It steers the
+            // next read rather than this one, which costs nothing and settles after a
+            // single hover.
+            DiagLog.Ocr("lines", "windows", softwareBitmap.PixelWidth, softwareBitmap.PixelHeight, string.Join("\n", lines));
             return lines;
         }
         catch (Exception ex)

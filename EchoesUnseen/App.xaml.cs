@@ -21,12 +21,74 @@ public partial class App : System.Windows.Application
     /// <summary>Global settings singleton. Created on startup, written on change.</summary>
     public static SettingsService Settings { get; private set; } = null!;
 
+    /// <summary>True only in the DISTRIBUTION build (published with -p:Distribution=true).
+    /// Gates end-user-facing bits like the "Send feedback" button, which the dev
+    /// build hides.</summary>
+#if DISTRIBUTION
+    public const bool IsDistribution = true;
+#else
+    public const bool IsDistribution = false;
+#endif
+
+    /// <summary>
+    /// When this executable was built.
+    ///
+    /// Two rounds of analysis have now been done against source that was not in the exe
+    /// that produced the log - once because a copy failed silently, once because a
+    /// desktop shortcut pointed at a Debug build from seven weeks earlier. Nothing in the
+    /// log said so. One line does.
+    /// </summary>
+    internal static string BuildStamp()
+    {
+        try
+        {
+            var attr = System.Reflection.Assembly.GetExecutingAssembly()
+                .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false);
+            if (attr.Length > 0)
+            {
+                var v = ((System.Reflection.AssemblyInformationalVersionAttribute)attr[0]).InformationalVersion;
+                var i = v.IndexOf("build", StringComparison.Ordinal);
+                if (i >= 0) return v[i..];
+            }
+        }
+        catch { }
+        return "build unknown";
+    }
+
     protected override void OnStartup(StartupEventArgs e)
     {
+        // SINGLE INSTANCE. The overlay registers global hotkeys and plays audio, so
+        // two copies fight: you hear the greeting/sonar twice ("double voice"), and
+        // whichever started first owns Ctrl+Shift+Q so the other can't be quit. When
+        // a new copy launches (e.g. a fresh build), close any older ones first.
+        try
+        {
+            var me = System.Diagnostics.Process.GetCurrentProcess();
+            foreach (var p in System.Diagnostics.Process.GetProcessesByName(me.ProcessName))
+            {
+                if (p.Id == me.Id) continue;
+                try { p.Kill(); p.WaitForExit(2000); } catch { }
+            }
+        }
+        catch { /* best effort — never block startup on this */ }
+
         // Load settings BEFORE the window initializes so theme colors, HUD position,
         // and voice preferences are available when XAML binds.
         Settings = new SettingsService();
         Settings.Load();
+
+        // Session header in the diagnostics log (when enabled) so a review has
+        // context: version, chosen engines, and which features are on.
+        var s = Settings.Current;
+        // Bring the screen reader up in the background before it is needed.
+        Services.Ocr.RapidOcrService.WarmUp();
+        if (s.HoverTargetingFusion)
+            _ = Task.Run(() => Services.Ocr.RapidOcrService.GetMatOcrAsync(CancellationToken.None));
+
+        Services.DiagLog.Log("APP", $"=== session start · v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} {BuildStamp()} " +
+            $"· hover-ocr={Services.Ocr.RapidOcrService.ModeDescription} chat-ocr={s.OcrEngine} voice={s.VoiceEngine} theme={s.ThemeId} " +
+            $"hoverGame={s.HoverReadGame} hoverTargeting={(s.HoverTargetingFusion ? "opencv+rapidocr" : "classic")}{(s.HoverTargetingChosen ? "" : "(build default)")} " +
+            $"combat={s.CombatAlertMode} wvw={s.WvwEnabled} ===");
 
         // Apply the user's saved theme, font size and high-contrast state
         // immediately so the main window renders with them on first paint

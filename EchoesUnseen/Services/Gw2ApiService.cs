@@ -157,6 +157,33 @@ public class Gw2ApiService
         return ids.Select(id => _itemCache.TryGetValue(id, out var v) ? v : null!).Where(v => v != null).ToList();
     }
 
+    // ─── Generic passthroughs (for feature services like WvW) ────────────────
+    /// <summary>GET a public endpoint and deserialize. Reuses the shared client
+    /// and error handling.</summary>
+    public Task<T?> GetPublicAsync<T>(string path, CancellationToken ct = default) where T : class
+        => GetJsonAsync<T>(path, ct, authenticated: false);
+
+    /// <summary>GET an account-authenticated endpoint (uses the saved API key).</summary>
+    public Task<T?> GetAuthAsync<T>(string path, CancellationToken ct = default) where T : class
+        => GetJsonAsync<T>(path, ct, authenticated: true);
+
+    /// <summary>An authenticated GET returning the raw JSON, for the odd endpoint whose
+    /// shape isn't worth a model class. The key is still handled here, in one place.</summary>
+    public async Task<string?> GetRawAuthAsync(string path, CancellationToken ct = default)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, path);
+            var key = _settings.Current.Gw2ApiKey;
+            if (string.IsNullOrWhiteSpace(key)) return null;
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+            using var res = await _http.SendAsync(req, ct);
+            if (!res.IsSuccessStatusCode) return null;
+            return await res.Content.ReadAsStringAsync(ct);
+        }
+        catch (Exception ex) { CrashLogger.Log("Gw2ApiService.GetRawAuthAsync " + path, ex); return null; }
+    }
+
     // ─── Core GET helper ─────────────────────────────────────────────────────
 
     private async Task<T?> GetJsonAsync<T>(string path, CancellationToken ct, bool authenticated = false) where T : class
@@ -219,6 +246,18 @@ public class MapObjectives
 {
     public int MapId { get; set; }
     public string MapName { get; set; } = "";
+
+    /// <summary>The map's bounds in GAME/world coordinates (inches): [[x1,y1],[x2,y2]].
+    /// Paired with ContinentRect this defines the affine map between continent
+    /// coords (what the objective list uses) and world metres (what MumbleLink's
+    /// live player position and camera facing use) — which is what lets the spoken
+    /// guide steer you in the same space the game reports your facing in.</summary>
+    [JsonPropertyName("map_rect")]
+    public float[][]? MapRect { get; set; }
+
+    /// <summary>The map's bounds in CONTINENT coordinates: [[x1,y1],[x2,y2]].</summary>
+    [JsonPropertyName("continent_rect")]
+    public float[][]? ContinentRect { get; set; }
 
     [JsonPropertyName("points_of_interest")]
     public Dictionary<string, PointOfInterest>? PointsOfInterest { get; set; }

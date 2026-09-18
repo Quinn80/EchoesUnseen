@@ -84,6 +84,12 @@ public class SongLibraryService
         doc.Source ??= "personal";
         doc.Songs ??= new List<Song>();
 
+        // Skip if a song with the same name is already in the library — stops the
+        // same file being added twice (e.g. importing a folder twice). Returns -1
+        // so the caller can report it as "already there" rather than "added".
+        if (doc.Songs.Any(s => string.Equals(s.Name?.Trim(), name?.Trim(), StringComparison.OrdinalIgnoreCase)))
+            return -1;
+
         // Assign an id above any existing one to avoid collisions.
         int nextId = 1000;
         if (doc.Songs.Count > 0)
@@ -126,6 +132,28 @@ public class SongLibraryService
     public static string NormalizeUserNotation(string input, out int noteCount, out int skipped)
     {
         input ??= "";
+
+        // RICH number notation (Vella / gw2mb "manual" style) — the format that
+        // carries DEPTH: chords "1/3/6", lower-octave "[6 7 8]", rapid runs
+        // "(3 2 1)", pauses "~". If any of those markers are present, parse it so
+        // the chords and octaves survive instead of being flattened to single notes.
+        if (input.IndexOfAny(new[] { '/', '[', ']', '(', ')', '~' }) >= 0
+            && input.Any(char.IsDigit))
+        {
+            return FromNumberNotation(input, out noteCount, out skipped);
+        }
+
+        // KEY notation (imported GW2 songs — full three octaves): octave commands
+        // 9/0 or a ".N" held-note duration mark it. Pass it straight through so the
+        // octave shifts and durations survive (ParseKeyNotation reads them).
+        var keyToks = input.Split(new[] { ' ', '\t', '\r', '\n', '|' }, StringSplitOptions.RemoveEmptyEntries);
+        if (keyToks.Any(t => t == "9" || t == "0" || t.Contains('.') || t.Contains('=')))
+        {
+            noteCount = keyToks.Count(t => t.Length > 0 && t[0] >= '1' && t[0] <= '8');
+            skipped = 0;
+            return input.Trim();
+        }
+
         bool hasLetters = input.Any(c => "ABCDEFGabcdefg".IndexOf(c) >= 0);
         if (!hasLetters)
             return ConvertNumberNotation(input, out noteCount, out skipped);
@@ -222,6 +250,44 @@ public class SongLibraryService
         return LoadFromFile(_bundledPath); // fallback to the loose file
     }
 
+    /// <summary>
+    /// Update a song's instrument in the user's external library. If the song
+    /// isn't a user song (e.g. a bundled one), it's added as a personal copy so
+    /// the choice sticks. No-op-safe on any error.
+    /// </summary>
+    public void UpdateInstrument(string songName, string instrument)
+    {
+        SongFile doc;
+        try
+        {
+            doc = File.Exists(_externalPath)
+                ? JsonSerializer.Deserialize<SongFile>(File.ReadAllText(_externalPath), JsonOpts) ?? new SongFile()
+                : new SongFile();
+        }
+        catch { doc = new SongFile(); }
+
+        doc.Version ??= "1.0";
+        doc.Source ??= "personal";
+        doc.Songs ??= new List<Song>();
+
+        var existing = doc.Songs.FirstOrDefault(s => s.Name.Equals(songName, StringComparison.OrdinalIgnoreCase));
+        if (existing != null)
+        {
+            existing.Instrument = instrument;
+        }
+        else
+        {
+            // Copy the bundled song into the personal library with the new instrument.
+            var bundled = LoadBundled()?.FirstOrDefault(s => s.Name.Equals(songName, StringComparison.OrdinalIgnoreCase));
+            if (bundled == null) return;
+            bundled.Instrument = instrument;
+            bundled.Source = "personal";
+            doc.Songs.Add(bundled);
+        }
+
+        File.WriteAllText(_externalPath, JsonSerializer.Serialize(doc, JsonOpts));
+    }
+
     private static List<Song>? LoadFromFile(string path)
     {
         if (!File.Exists(path)) return null;
@@ -266,6 +332,13 @@ public class SongLibraryService
         int beatMs = 60000 / Math.Max(1, bpm);
         var tokens = abc.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
+        // Auto-detect the notation. Imported GW2 songs use KEY notation (digits
+        // 1-8 for the notes, 9/0 for octave-down/up), which supports the full
+        // three-octave instrument. Bundled songs use single-octave ABC letters.
+        int digitStart = tokens.Count(t => t.Length > 0 && char.IsDigit(t[0]));
+        int letterStart = tokens.Count(t => t.Length > 0 && "ABCDEFGabcdefg".IndexOf(t[0]) >= 0);
+        if (digitStart > letterStart) return ParseKeyNotation(abc, bpm);
+
         foreach (var raw in tokens)
         {
             if (raw == "|" || string.IsNullOrWhiteSpace(raw)) continue;
@@ -299,6 +372,109 @@ public class SongLibraryService
             notes.Add(new ParsedNote(key, beatMs * beats, isRest));
         }
         return notes;
+    }
+
+    /// <summary>
+    /// Parse GW2 KEY notation — the full three-octave instrument. Tokens:
+    ///   1-8        a note key (one beat)
+    ///   1.3        a note key held for 3 beats  (dot + beat count)
+    ///   9 / 0      octave DOWN / UP command (instant; shifts the register)
+    ///   z / z.2    a rest (optionally N beats)
+    /// The note's Key is the literal game key, so Auto-Play reproduces the song
+    /// exactly (including octave shifts), and the guide/tones read 9/0 as register
+    /// changes.
+    /// </summary>
+    public static List<ParsedNote> ParseKeyNotation(string notation, int bpm)
+    {
+        var notes = new List<ParsedNote>();
+        if (string.IsNullOrWhiteSpace(notation)) return notes;
+
+        int beatMs = 60000 / Math.Max(1, bpm);
+        int octaveCmdMs = Math.Clamp(beatMs / 3, 40, 200);   // an octave shift is a quick tap
+
+        foreach (var raw in notation.Split(new[] { ' ', '\t', '\n', '\r', '|' },
+                                           StringSplitOptions.RemoveEmptyEntries))
+        {
+            var tok = raw.Trim();
+            if (tok.Length == 0) continue;
+            char c = tok[0];
+
+            if (c == '9' || c == '0')   // octave shift command
+            {
+                notes.Add(new ParsedNote(c, octaveCmdMs, false));
+                continue;
+            }
+
+            // Exact-millisecond form "key=ms" (AutoHotkey imports keep true timing).
+            int eq = tok.IndexOf('=');
+            if (eq >= 0 && int.TryParse(tok.AsSpan(eq + 1), out var msVal))
+            {
+                msVal = Math.Clamp(msVal, 1, 60000);
+                if (c is 'z' or 'Z' or '-') notes.Add(new ParsedNote(' ', msVal, true));
+                else if (c >= '1' && c <= '8') notes.Add(new ParsedNote(c, msVal, false));
+                continue;
+            }
+
+            // Otherwise an optional ".N" beat count (bundled ABC-style songs).
+            int beats = 1;
+            int dot = tok.IndexOf('.');
+            if (dot >= 0 && int.TryParse(tok.AsSpan(dot + 1), out var b)) beats = Math.Clamp(b, 1, 16);
+
+            if (c is 'z' or 'Z' or '-') { notes.Add(new ParsedNote(' ', beatMs * beats, true)); continue; }
+            if (c >= '1' && c <= '8') notes.Add(new ParsedNote(c, beatMs * beats, false));
+        }
+        return notes;
+    }
+
+    /// <summary>
+    /// Parse the RICH GW2 number notation used by community song sheets (Vella's
+    /// wiki, gw2mb "manual" export) into our exact-ms KEY notation, keeping the
+    /// depth:
+    ///   1-8        a note
+    ///   1/3/6      a CHORD — keys pressed (near-)together
+    ///   [ 6 7 8 ]  LOWER octave (wrapped with the 9 = down / 0 = up shift keys)
+    ///   ( 3 2 1 )  a RAPID run (each note played quicker)
+    ///   ~ or -     a short pause
+    /// Output tokens: "key=ms", "9"/"0" octave shifts, "z=ms" rests.
+    /// </summary>
+    public static string FromNumberNotation(string input, out int noteCount, out int skipped)
+    {
+        noteCount = 0; skipped = 0;
+        var sb = new System.Text.StringBuilder();
+        const int NoteMs = 300, RapidMs = 150, ChordLeadMs = 18, PauseMs = 150;
+
+        bool rapid = false;
+        int i = 0;
+        while (i < input.Length)
+        {
+            char c = input[i];
+            switch (c)
+            {
+                case '(': rapid = true; i++; break;
+                case ')': rapid = false; i++; break;
+                case '[': sb.Append("9 "); i++; break;                 // enter lower octave
+                case ']': sb.Append("0 "); i++; break;                 // back up an octave
+                case '~':
+                case '-': sb.Append($"z={PauseMs} "); i++; break;      // short pause
+                default:
+                    if (c >= '1' && c <= '8')
+                    {
+                        // Gather a chord: 1/3/6 …
+                        var chord = new List<char> { c };
+                        while (i + 2 < input.Length && input[i + 1] == '/' && input[i + 2] >= '1' && input[i + 2] <= '8')
+                        { chord.Add(input[i + 2]); i += 2; }
+
+                        int dur = rapid ? RapidMs : NoteMs;
+                        for (int k = 0; k < chord.Count - 1; k++)   // stacked keys, near-instant
+                        { sb.Append(chord[k]).Append('=').Append(ChordLeadMs).Append(' '); noteCount++; }
+                        sb.Append(chord[^1]).Append('=').Append(dur).Append(' '); noteCount++;
+                        i++;
+                    }
+                    else { if (!char.IsWhiteSpace(c) && c != '/') skipped++; i++; }
+                    break;
+            }
+        }
+        return sb.ToString().Trim();
     }
 
     /// <summary>Map ABC note letter to the GW2 instrument key (1-8).</summary>

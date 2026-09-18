@@ -23,12 +23,22 @@
                          from the voice list so picking a voice can never
                          silently switch engines (which once dropped the app onto
                          the robotic Windows voice without the user noticing). -->
+                    <!-- Screen-reader passthrough — the fix for NVDA conflicts. -->
+                    <CheckBox x:Name="NvdaToggle" Foreground="White" Margin="0,0,0,4"
+                              Content="Speak through my screen reader (NVDA)"
+                              Checked="Nvda_Changed" Unchecked="Nvda_Changed"
+                              AutomationProperties.HelpText="When NVDA is running, Echoes Unseen speaks through it with your own NVDA voice — no double-talk, no audio ducking, no conflict. Falls back to the app voice if NVDA isn't running."/>
+                    <TextBlock Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                               TextWrapping="Wrap" Margin="0,0,0,10"
+                               Text="Recommended if you use NVDA. Everything is spoken by NVDA in your own voice — the app's own voice engine below is only used when NVDA isn't running."/>
+
                     <TextBlock Text="Voice engine" FontWeight="SemiBold" Margin="0,0,0,4"/>
                     <ComboBox x:Name="EngineCombo" Margin="0,0,0,12" Padding="8,6"
                               SelectionChanged="EngineCombo_SelectionChanged"
                               AutomationProperties.Name="Voice engine"
                               AutomationProperties.HelpText="Choose which text-to-speech engine to use. Piper is a natural local voice, ElevenLabs is cloud, Windows Speech is the robotic built-in fallback.">
                         <ComboBoxItem Content="Piper — natural, local (recommended)" Tag="piper"/>
+                        <ComboBoxItem Content="Windows Natural — natural, local, reliable" Tag="winnatural"/>
                         <ComboBoxItem x:Name="ElevenLabsEngineItem"
                                       Content="ElevenLabs — cloud, needs API key" Tag="elevenlabs"/>
                         <ComboBoxItem Content="Windows Speech — robotic, built-in" Tag="sapi"/>
@@ -41,6 +51,18 @@
                               SelectionChanged="VoiceCombo_SelectionChanged"
                               AutomationProperties.Name="Voice"
                               AutomationProperties.HelpText="Pick a voice for the selected engine."/>
+
+                    <!-- A different voice for chat, so you can hear WHAT KIND of thing
+                         is speaking before you have parsed the words. -->
+                    <TextBlock Text="Chat voice" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                               TextWrapping="Wrap" Margin="0,0,0,4"
+                               Text="Reads other players' chat in a different voice from everything else, so you can tell instantly whether it's a stranger talking or the app talking to you. Leave on 'Same as main voice' if you'd rather they matched."/>
+                    <ComboBox x:Name="ChatVoiceCombo" Margin="0,0,0,12" Padding="8,6"
+                              DisplayMemberPath="Name"
+                              SelectionChanged="ChatVoiceCombo_SelectionChanged"
+                              AutomationProperties.Name="Chat voice"
+                              AutomationProperties.HelpText="The voice used for other players' chat messages. Choose one that sounds clearly different from your main voice."/>
 
                     <!-- Piper voice manager: download + preview, shown only when
                          Piper is the engine. Rows are built in code-behind. -->
@@ -61,8 +83,8 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Slider x:Name="SpeedSlider" Grid.Column="0"
-                                Minimum="0.5" Maximum="2.0" Value="1.0"
-                                TickFrequency="0.1" IsSnapToTickEnabled="False"
+                                Minimum="0.5" Maximum="4.0" Value="1.0"
+                                TickFrequency="0.25" IsSnapToTickEnabled="False"
                                 ValueChanged="SpeedSlider_ValueChanged"/>
                         <TextBlock x:Name="SpeedValue" Grid.Column="1"
                                    Text="1.0x" Margin="12,0,0,0" MinWidth="40"
@@ -262,39 +284,6 @@
         </TabItem>
 
         <!-- ═══ ABOUT TAB ══════════════════════════════════════════════════ -->
-        <TabItem Header="About">
-            <StackPanel Margin="8">
-                <TextBlock Text="Echoes Unseen" FontSize="24" FontWeight="Bold"
-                           Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,4"/>
-                <TextBlock Text="Accessibility Overlay for Guild Wars 2"
-                           Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,16"/>
-                <TextBlock Text="B1.1" Margin="0,0,0,16"
-                           AutomationProperties.Name="Version: B1.1"/>
-
-                <Button Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"
-                        Content="👋 Show the welcome screen again" Margin="0,0,0,16"
-                        Click="ShowWelcome_Click"
-                        AutomationProperties.Name="Show the welcome screen again"
-                        AutomationProperties.HelpText="Reopens the starter controls card and reads it aloud."/>
-
-                <Border Background="#11FF1A8A" BorderBrush="{DynamicResource PrimaryBrush}"
-                        BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,12">
-                    <StackPanel>
-                        <TextBlock Text="Live MumbleLink Status" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                        <TextBlock x:Name="MumbleStatus"
-                                   Text="Initializing..."
-                                   FontFamily="Consolas" FontSize="{DynamicResource GlobalFontSizeSmall}"/>
-                    </StackPanel>
-                </Border>
-
-                <TextBlock Text="Credits" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                <TextBlock Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}" TextWrapping="Wrap">
-                    Piper TTS (Rhasspy) • NAudio • Windows Speech Recognition •
-                    Windows.Media.Ocr • ArenaNet (Guild Wars 2 API) • gw2mb.com (music library)
-                </TextBlock>
-            </StackPanel>
-        </TabItem>
-        <!-- ═══ FEATURES TAB ══════════════════════════════════════════════ -->
         <TabItem Header="Features">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                 <StackPanel>
@@ -303,6 +292,91 @@
                                Margin="0,0,0,12"
                                Text="Everything here is optional. Switching a feature off never removes a tool from the wheel — it just stops that behaviour happening on its own."/>
                     <StackPanel x:Name="FeatureToggles"/>
+
+                    <!-- Screen-reading engine -->
+                    <TextBlock Text="Reading text off the screen" FontWeight="SemiBold" Margin="0,16,0,4"/>
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <TextBlock Text="OCR engine" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="OcrEngineCombo" Grid.Column="1" SelectionChanged="OcrEngine_Changed"
+                                  AutomationProperties.Name="OCR engine"
+                                  AutomationProperties.HelpText="Which engine reads text off the screen for hover-read and the chat reader.">
+                            <ComboBoxItem Content="Windows (fast, built in)" Tag="windows"/>
+                            <ComboBoxItem Content="Tesseract (higher accuracy, downloads once)" Tag="tesseract"/>
+                        </ComboBox>
+                    </Grid>
+                    <TextBlock Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                               TextWrapping="Wrap" Margin="0,0,0,4"
+                               Text="Tesseract can read small game text more accurately. The first time you pick it, a small English model downloads (about 15 MB); Windows OCR is used until it's ready."/>
+
+                    <CheckBox x:Name="DiagToggle" Content="Diagnostic logging (records what OCR reads)" Foreground="White"
+                              Margin="0,4,0,4" Checked="Diag_Changed" Unchecked="Diag_Changed"
+                              AutomationProperties.HelpText="Write raw OCR output and filter decisions to a log file so reading problems can be diagnosed."/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <Button Style="{StaticResource HCButton}" Content="📂 Open log" Click="OpenDiag_Click"
+                                AutomationProperties.Name="Open the OCR diagnostics log"/>
+                        <Button Style="{StaticResource HCButton}" Margin="8,0,0,0" Content="🗑 Clear log" Click="ClearDiag_Click"
+                                AutomationProperties.Name="Clear the OCR diagnostics log"/>
+                    </StackPanel>
+
+                    <!-- Bug recorder -->
+                    <TextBlock Text="Record a bug" FontWeight="SemiBold" Margin="0,16,0,4"/>
+                    <TextBlock Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                               TextWrapping="Wrap" Margin="0,0,0,6"
+                               Text="Records up to two minutes of your screen — including the Echoes Unseen overlay, which Game Bar and OBS Game Capture cannot see — and saves it with the app's own log as a single zip file in Downloads. It says out loud when it starts and stops. Nothing is sent anywhere; you choose what to do with the file. No API keys are included."/>
+                    <CheckBox x:Name="BugRecToggle" Content="Allow bug recording" Foreground="White"
+                              Margin="0,0,0,6" Checked="BugRec_Changed" Unchecked="BugRec_Changed"
+                              AutomationProperties.HelpText="Allows a short screen recording to be made for bug reports, using the record shortcut or the button below."/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <Button x:Name="BugRecButton" Style="{StaticResource HCButton}" Content="⏺ Start recording"
+                                Click="BugRec_Click" AutomationProperties.Name="Start or stop a bug recording"/>
+                        <Button Style="{StaticResource HCButton}" Margin="8,0,0,0" Content="📂 Open Downloads"
+                                Click="OpenDownloads_Click" AutomationProperties.Name="Open your Downloads folder"/>
+                    </StackPanel>
+                    <TextBlock x:Name="BugRecStatus" Foreground="{DynamicResource MutedBrush}"
+                               FontSize="{DynamicResource GlobalFontSizeSmall}" TextWrapping="Wrap" Margin="0,0,0,4"/>
+
+                    <!-- Chat reader -->
+                    <TextBlock Text="Chat reader" FontWeight="SemiBold" Margin="0,16,0,4"/>
+                    <CheckBox x:Name="ChatNamesToggle" Content="Say who said it in chat (names)" Foreground="White"
+                              Margin="0,0,0,6" Checked="ChatNames_Changed" Unchecked="ChatNames_Changed"
+                              AutomationProperties.HelpText="Read the player's name before each chat message. Names are the hardest thing on screen to read accurately, so if you hear garbled names being spelled out letter by letter, turn this off and you'll hear just what was said."/>
+
+                    <!-- Feedback / crash report (distribution build only) -->
+                    <StackPanel x:Name="FeedbackSection" Visibility="Collapsed">
+                        <TextBlock Text="Send feedback" FontWeight="SemiBold" Margin="0,16,0,4"/>
+                        <TextBlock Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                                   TextWrapping="Wrap" Margin="0,0,0,6"
+                                   Text="Tell the developer about a problem or an idea. This opens your email app with the message ready — you press Send. Nothing is sent automatically."/>
+                        <TextBox x:Name="FeedbackBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70"
+                                 VerticalScrollBarVisibility="Auto" Margin="0,0,0,6"
+                                 AutomationProperties.Name="Your feedback message"/>
+                        <CheckBox x:Name="FeedbackIncludeLog" Foreground="White" Margin="0,0,0,6"
+                                  Content="Include diagnostic log (helps fix bugs; may contain recent chat text)"
+                                  AutomationProperties.HelpText="Attaches a copy of the recent log so the developer can see what went wrong. It can include recent chat text, so leave off if that's private."/>
+                        <Button Style="{StaticResource HCButton}" Content="✉ Send feedback / report" Click="Feedback_Click"
+                                AutomationProperties.Name="Send feedback or a crash report to the developer"/>
+                        <TextBlock x:Name="FeedbackStatus" Foreground="{DynamicResource MutedBrush}"
+                                   FontSize="{DynamicResource GlobalFontSizeSmall}" TextWrapping="Wrap" Margin="0,4,0,4"/>
+                    </StackPanel>
+
+                    <!-- WvW / PvP -->
+                    <TextBlock Text="World vs World &amp; PvP" FontWeight="SemiBold" Margin="0,16,0,4"/>
+                    <CheckBox x:Name="WvwToggle" Content="WvW objective + lord-timer announcements" Foreground="White"
+                              Checked="Wvw_Changed" Unchecked="Wvw_Changed"
+                              AutomationProperties.HelpText="Announce who owns objectives, when they flip, and when an enemy lord's invulnerability wears off. Needs your API key."/>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <TextBlock Text="My team" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="WvwTeamCombo" Grid.Column="1" SelectionChanged="WvwTeam_Changed"
+                                  AutomationProperties.Name="My WvW team colour"
+                                  AutomationProperties.HelpText="Set your team colour. World Restructuring means the API often can't tell it, so pick it here if 'auto' is wrong.">
+                            <ComboBoxItem Content="Auto (from API)" Tag="auto"/>
+                            <ComboBoxItem Content="Red" Tag="red"/>
+                            <ComboBoxItem Content="Blue" Tag="blue"/>
+                            <ComboBoxItem Content="Green" Tag="green"/>
+                        </ComboBox>
+                    </Grid>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -330,7 +404,84 @@
             </ScrollViewer>
         </TabItem>
 
-    </TabControl>
+        <TabItem Header="About">
+            <StackPanel Margin="8">
+                <TextBlock Text="Echoes Unseen" FontSize="24" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,4"/>
+                <TextBlock Text="Accessibility Overlay for Guild Wars 2"
+                           Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,16"/>
+                <TextBlock Text="b1.5" Margin="0,0,0,16"
+                           AutomationProperties.Name="Version: b1.5"/>
+
+                <!-- WHAT RUNS ON THIS MACHINE.
+                     Worth saying out loud on the page people actually read, because
+                     "no AI" was never quite the promise, and neither was "nothing ever
+                     leaves". The promise is precise: reading the screen and speaking it
+                     happen here, nothing here plays the game or decides anything, and the
+                     things that do use the network are named. A local neural model that
+                     turns a tooltip into speech is the whole point of an accessibility
+                     overlay, not a compromise of it. -->
+                <Border Background="#15A78BFA" BorderBrush="#55A78BFA" BorderThickness="1"
+                        CornerRadius="6" Padding="12,10" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Core accessibility processing runs on your computer"
+                                   Foreground="White" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                        <TextBlock TextWrapping="Wrap" Foreground="White" FontSize="13" Margin="0,0,0,6"
+                                   Text="Reading the screen and speaking it aloud use small models that live on this machine. Nothing they read is uploaded, no account is needed, and no part of Echoes Unseen plays Guild Wars 2 for you or decides anything about your game."/>
+                        <TextBlock TextWrapping="Wrap" Foreground="White" FontSize="13" Margin="0,0,0,6"
+                                   Text="Enhanced Hover Targeting, on by default: OpenCV works out where an interface object begins and ends, RapidOCR (PP-OCRv5, Apache 2.0) reads the text inside it, and Echoes Unseen speaks the result. Windows OCR is the local fallback if those models cannot load, and Classic Hover Targeting is still a switch away in Settings. Tesseract is an optional engine for the Chat Reader. Speech: Piper, a local neural voice, with the Windows voices built in."
+                                   AutomationProperties.Name="Enhanced Hover Targeting, on by default. OpenCV works out where an interface object begins and ends, RapidOCR reads the text inside it, and Echoes Unseen speaks the result. Windows OCR is the local fallback, and Classic Hover Targeting is still available in Settings. Tesseract is optional for the Chat Reader. Speech uses Piper, a local neural voice, with the Windows voices built in."/>
+                        <TextBlock TextWrapping="Wrap" Foreground="White" FontSize="13"
+                                   Text="What does use the internet: the official Guild Wars 2 API with your key, the Guild Wars 2 Wiki for Oracle searches and the song library, a check for new versions, one-time downloads of voices and optional models, and ElevenLabs if you switch it on with your own key - it is off unless you choose it. A bug report is sent only when you ask for one, and it contains pictures of your own screen and your logs, which is what makes it useful, so sending one is always your choice."/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Permanent, prominent credit. The guide feature exists because of
+                     TacO, BlishHUD and the pack authors' open format and freely shared
+                     work; it belongs on the About page, not buried inside a tab. -->
+                <Border Background="#1500E5FF" BorderBrush="#5500E5FF" BorderThickness="1"
+                        CornerRadius="6" Padding="12,10" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Thanks to TacO and the marker-pack community"
+                                   Foreground="White" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+                        <TextBlock TextWrapping="Wrap" Foreground="White" FontSize="13"
+                                   Text="The Guides feature reads the open TacO / BlishHUD marker-pack format (.taco, .xml, .trl). Enormous thanks to GW2TacO, BlishHUD, and every author who has hand-drawn and freely shared a trail — Tekkit's Workshop, Czokalapik, Lady Elyssa, QuitarHero and many others. None of this would exist without their work."/>
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,6,0,0"
+                                   Text="Echoes Unseen ships no marker packs and redistributes nothing — you import your own copies. Please support the pack authors directly."/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,16"
+                           Text="Echoes Unseen is an unofficial accessibility companion for Guild Wars 2. It is not affiliated with, endorsed by, sponsored by or approved by ArenaNet or NCSOFT. Guild Wars 2 and its assets are © ArenaNet, LLC."/>
+
+                <Button Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"
+                        Content="👋 Show the welcome screen again" Margin="0,0,0,16"
+                        Click="ShowWelcome_Click"
+                        AutomationProperties.Name="Show the welcome screen again"
+                        AutomationProperties.HelpText="Reopens the starter controls card and reads it aloud."/>
+
+                <Border Background="#11FF1A8A" BorderBrush="{DynamicResource PrimaryBrush}"
+                        BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Live MumbleLink Status" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock x:Name="MumbleStatus"
+                                   Text="Initializing..."
+                                   FontFamily="Consolas" FontSize="{DynamicResource GlobalFontSizeSmall}"/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="Credits" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                <TextBlock Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}" TextWrapping="Wrap">
+                    Piper TTS (Rhasspy) • RapidOCR / RapidOcrNet with PP-OCRv5 models • ONNX Runtime •
+                    OpenCV (OpenCvSharp) • Tesseract • Whisper.net • NAudio • AutoHotkey •
+                    NVDA Controller Client • Windows Speech and Windows.Media.Ocr •
+                    ArenaNet (Guild Wars 2 API) • the Guild Wars 2 Wiki (community song library) •
+                    GW2TacO, BlishHUD and the marker-pack authors — full licences in THIRD-PARTY-NOTICES.md
+                </TextBlock>
+            </StackPanel>
+        </TabItem>
+        <!-- ═══ FEATURES TAB ══════════════════════════════════════════════ -->
+</TabControl>
 
         <!-- Save / Reset footer, visible on every tab -->
         <Border Grid.Row="1" Padding="12,10"

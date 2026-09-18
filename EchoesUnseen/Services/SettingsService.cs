@@ -61,6 +61,7 @@ public class SettingsService
                 // Decrypt API keys AFTER deserialization (they were stored encrypted).
                 loaded.Gw2ApiKey = Decrypt(loaded.Gw2ApiKey);
                 loaded.ElevenLabsApiKey = Decrypt(loaded.ElevenLabsApiKey);
+                Migrate(loaded);
                 Current = loaded;
             }
         }
@@ -69,6 +70,37 @@ public class SettingsService
             CrashLogger.Log("SettingsService.Load", ex);
             Current = new AppSettings();
         }
+    }
+
+    /// <summary>
+    /// Carry an older settings file forward.
+    ///
+    /// WHY THIS IS NEEDED AT ALL: a saved settings file always wins over the default in
+    /// the code. So changing a default only ever helps a brand-new install - for anyone
+    /// who has already run the app, the old value is pinned in their file and the change
+    /// silently does nothing. That bit us twice in one day: a shortcut was moved off a
+    /// combination that could not register on this machine, and the trail's reach was
+    /// shortened after testing, and neither would have taken effect.
+    ///
+    /// So each entry here moves a value ON ONLY IF it is still the exact old default -
+    /// i.e. the user never chose it. Anything deliberately set is left alone.
+    /// </summary>
+    private static void Migrate(AppSettings s)
+    {
+        // Ctrl+Alt+B was already claimed by other software and never registered, so it
+        // was a shortcut that silently did nothing. F9 is free and needs one finger.
+        if (s.Keybinds.RecordBug is "Ctrl+Alt+B") s.Keybinds.RecordBug = "F9";
+
+        // Same story: Ctrl+Shift+O was taken, so "read my objective" silently did nothing.
+        if (s.Keybinds.ReadObjective is "Ctrl+Shift+O") s.Keybinds.ReadObjective = "F8";
+
+        // 150 m of route in a walled city put most of the far half of the ribbon across
+        // rooftops you cannot walk to from here, which reads as clutter.
+        if (Math.Abs(s.TrailDrawAheadM - 150.0) < 0.01) s.TrailDrawAheadM = 80.0;
+
+        // Hover targeting follows the build's default until the player chooses. A file saved
+        // by the first candidate build holds "false" that nobody chose.
+        if (!s.HoverTargetingChosen) s.HoverTargetingFusion = AppSettings.HoverTargetingDefault;
     }
 
     /// <summary>

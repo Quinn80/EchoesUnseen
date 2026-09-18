@@ -174,25 +174,41 @@ public class PiperTtsEngine : ITtsEngine
         };
 
         using var proc = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start piper.exe");
-
-        // Pipe text in...
-        await proc.StandardInput.WriteAsync(text);
-        proc.StandardInput.Close();
-
-        // ...and read raw PCM bytes out.
-        using var pcmBuf = new MemoryStream();
-        await proc.StandardOutput.BaseStream.CopyToAsync(pcmBuf, ct);
-        await proc.WaitForExitAsync(ct);
-
-        if (proc.ExitCode != 0)
+        try
         {
-            var err = await proc.StandardError.ReadToEndAsync();
-            throw new InvalidOperationException($"Piper exited with code {proc.ExitCode}: {err}");
-        }
+            // Hard timeout so a hung Piper can never permanently deadlock speech.
+            // Piper is a subprocess; if it stalls (bad input, stuck pipe) while the
+            // speak-gate is held, EVERY voice goes silent until the app is
+            // restarted — the "TTS stopped, had to restart" bug. On timeout we
+            // throw, the caller falls back to SAPI, and the process is killed below.
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(12));
+            var tk = timeoutCts.Token;
 
-        // Wrap raw PCM in a WAV header so NAudio can play it.
-        var wav = WrapPcmAsWav(pcmBuf.ToArray(), SampleRate, BitsPerSample, Channels);
-        return new TtsAudio(wav, "wav");
+            // Pipe text in...
+            await proc.StandardInput.WriteAsync(text.AsMemory(), tk);
+            proc.StandardInput.Close();
+
+            // ...and read raw PCM bytes out.
+            using var pcmBuf = new MemoryStream();
+            await proc.StandardOutput.BaseStream.CopyToAsync(pcmBuf, tk);
+            await proc.WaitForExitAsync(tk);
+
+            if (proc.ExitCode != 0)
+            {
+                var err = await proc.StandardError.ReadToEndAsync();
+                throw new InvalidOperationException($"Piper exited with code {proc.ExitCode}: {err}");
+            }
+
+            // Wrap raw PCM in a WAV header so NAudio can play it.
+            var wav = WrapPcmAsWav(pcmBuf.ToArray(), SampleRate, BitsPerSample, Channels);
+            return new TtsAudio(wav, "wav");
+        }
+        finally
+        {
+            // Never leave a hung/half-run Piper process alive holding resources.
+            try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); } catch { }
+        }
     }
 
     public Task<List<VoiceInfo>> GetAvailableVoicesAsync()

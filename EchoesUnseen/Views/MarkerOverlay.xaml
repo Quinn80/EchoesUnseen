@@ -1,0 +1,15 @@
+<UserControl x:Class="EchoesUnseen.Views.MarkerOverlay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             IsHitTestVisible="False">
+    <!-- Full-screen, click-through overlay.
+
+         Scene  – the painted trail, as real 3-D geometry. WPF owns the camera and the
+                  near-plane clipping here, which is what stops a point passing behind
+                  you from turning into a giant diagonal wedge across the screen.
+         Root   – markers and any 2-D drawing, painted on top by hand-projection. -->
+    <Grid>
+        <Viewport3D x:Name="Scene" ClipToBounds="True" IsHitTestVisible="False"/>
+        <Canvas x:Name="Root" ClipToBounds="True"/>
+    </Grid>
+</UserControl>

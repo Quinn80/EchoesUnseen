@@ -22,11 +22,50 @@ namespace EchoesUnseen.Services;
 /// no AI. Volume follows the user's SonarVolume setting so one slider
 /// governs all non-speech audio. The PanelEarcons setting disables them.
 /// </summary>
-public class EarconService
+public class EarconService : IDisposable
 {
     private readonly SettingsService _settings;
 
     public EarconService(SettingsService settings) => _settings = settings;
+
+    /// <summary>The app's single earcon service, so features without a direct
+    /// reference (e.g. the Trail Navigator's interactive-item alerts) can play a cue.
+    /// Set once in MainWindow.</summary>
+    public static EarconService? Shared { get; set; }
+
+    /// <summary>A distinct, crisp two-note "ting" for stepping next to an interactive
+    /// item (chest / node / collectible). Deliberately brighter and shorter than the
+    /// hover/panel cues so it can't be mistaken for them.</summary>
+    public void InteractivePing()
+    {
+        _ = System.Threading.Tasks.Task.Run(() =>
+        {
+            try
+            {
+                var volume = Math.Clamp(_settings.Current.SonarVolume, 0f, 1f) * 0.4f;
+                // Bright perfect-fifth ding: E6 then B6, quick and shimmering.
+                PlayVoices(new[]
+                {
+                    (1318.5f, 0,   150, 6, 120),
+                    (1975.5f, 70,  170, 6, 150),
+                }, volume);
+            }
+            catch (Exception ex) { CrashLogger.Log("EarconService.InteractivePing", ex); }
+        });
+    }
+
+    // ONE persistent output for every earcon, opened once and fed samples — the
+    // same fix SonarService uses. Opening a fresh WaveOutEvent on every hover (the
+    // old approach) churned the Windows audio session: each open/close made Windows
+    // re-evaluate the mix and could trigger communications "ducking", so game audio
+    // dipped and then swelled back a few seconds later whenever the pointer crossed
+    // the wheel. A single always-open device that we top up with samples keeps the
+    // session stable, so nothing else's volume moves. Silence (ReadFully) fills the
+    // gaps between cues.
+    private readonly object _audioLock = new();
+    private WaveOutEvent? _output;
+    private BufferedWaveProvider? _provider;
+    private static readonly WaveFormat EarconFmt = WaveFormat.CreateIeeeFloatWaveFormat(44100, 1);
 
     /// <summary>Soft ambient swell that fades IN: a panel just opened.</summary>
     public void PanelOpened() => PlayAmbient(open: true);
@@ -94,6 +133,26 @@ public class EarconService
         });
     }
 
+    /// <summary>WvW Righteous Indignation cue. up=true: a low, resonant "shield up"
+    /// double-tone (the lord is warded/invulnerable). up=false: a brighter rising
+    /// "opening" pair (the ward has dropped — it's attackable now). Distinct from
+    /// every other cue so it reads instantly in the noise of a fight.</summary>
+    public void WardCue(bool up)
+    {
+        _ = System.Threading.Tasks.Task.Run(() =>
+        {
+            try
+            {
+                var volume = Math.Clamp(_settings.Current.SonarVolume, 0f, 1f) * 0.5f;
+                var voices = up
+                    ? new[] { (196.00f, 0, 300, 20, 200), (261.63f, 90, 320, 20, 240) }   // G3→C4, warded
+                    : new[] { (523.25f, 0, 200, 8, 150), (783.99f, 90, 240, 8, 190) };     // C5→G5, opening
+                PlayVoices(voices, volume);
+            }
+            catch (Exception ex) { CrashLogger.Log("EarconService.WardCue", ex); }
+        });
+    }
+
     private void PlayHoverTone(double hz, bool fadeIn)
     {
         _ = System.Threading.Tasks.Task.Run(() =>
@@ -155,7 +214,7 @@ public class EarconService
     /// fade-in and fade-out lengths) — that asymmetry is what makes the open
     /// cue feel like it fades in and the close cue feel like it fades out.
     /// </summary>
-    private static void PlayVoices((float Hz, int StartMs, int LenMs, int FadeInMs, int FadeOutMs)[] voices, float volume)
+    private void PlayVoices((float Hz, int StartMs, int LenMs, int FadeInMs, int FadeOutMs)[] voices, float volume)
     {
         const int sampleRate = 44100;
         int totalMs = 0;
@@ -188,18 +247,43 @@ public class EarconService
         for (int n = 0; n < totalSamples; n++)
             buffer[n] = Math.Clamp(buffer[n] * 0.62f * volume, -1f, 1f);
 
-        var provider = new BufferedWaveProvider(WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 1))
-        {
-            BufferLength = totalSamples * 4 + 64,
-        };
         var bytes = new byte[totalSamples * 4];
         Buffer.BlockCopy(buffer, 0, bytes, 0, bytes.Length);
-        provider.AddSamples(bytes, 0, bytes.Length);
 
-        using var output = new WaveOutEvent();
-        output.Init(provider);
-        output.Play();
-        while (output.PlaybackState == PlaybackState.Playing)
-            Thread.Sleep(10);
+        lock (_audioLock)
+        {
+            EnsureOutput();
+            // Don't let rapid pointer flicks pile up a queue of tones — if a cue is
+            // already sounding, drop this one rather than stacking a backlog.
+            if (_provider!.BufferedDuration > TimeSpan.FromMilliseconds(120)) return;
+            _provider.AddSamples(bytes, 0, bytes.Length);
+        }
+    }
+
+    // Open the single persistent output once. ReadFully keeps it alive playing
+    // silence between cues, so the audio session never opens/closes on the fly.
+    private void EnsureOutput()
+    {
+        if (_output != null) return;
+        _provider = new BufferedWaveProvider(EarconFmt)
+        {
+            BufferDuration = TimeSpan.FromSeconds(5),
+            DiscardOnBufferOverflow = true,
+            ReadFully = true,
+        };
+        _output = new WaveOutEvent { DesiredLatency = 120 };
+        _output.Init(_provider);
+        _output.Play();
+    }
+
+    public void Dispose()
+    {
+        lock (_audioLock)
+        {
+            try { _output?.Stop(); } catch { }
+            try { _output?.Dispose(); } catch { }
+            _output = null;
+            _provider = null;
+        }
     }
 }

@@ -6,13 +6,22 @@
              mc:Ignorable="d"
              d:DesignHeight="560" d:DesignWidth="560">
 
-    <Grid Margin="8">
+    <!-- Two tabs: the navigation controls, and the Guides picker. Keeping the (long)
+         guide list on its own tab stops it burying the sonar/compass settings. -->
+    <TabControl Background="Transparent" BorderThickness="0">
+    <TabItem Header="Navigation" AutomationProperties.Name="Navigation settings tab">
+    <!-- The whole panel scrolls, so the nearest-objectives list at the bottom is
+         always reachable no matter how tall the compass options make the panel. -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <Grid Margin="8,8,14,8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- Map header -->
             <RowDefinition Height="Auto"/>  <!-- Filters -->
             <RowDefinition Height="Auto"/>  <!-- Sonar controls -->
+            <RowDefinition Height="Auto"/>  <!-- Sonar sound picker -->
+            <RowDefinition Height="Auto"/>  <!-- Compass controls -->
             <RowDefinition Height="Auto"/>  <!-- Action buttons -->
-            <RowDefinition Height="*"/>     <!-- Nearest list -->
+            <RowDefinition Height="Auto"/>  <!-- Nearest list -->
         </Grid.RowDefinitions>
 
         <!-- Current map -->
@@ -30,11 +39,36 @@
                 <TextBlock x:Name="ObjectiveCount"
                            Text=""
                            Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"/>
+                <TextBlock x:Name="ProgressText"
+                           Text=""
+                           Foreground="{DynamicResource SuccessBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                           FontWeight="SemiBold" Margin="0,2,0,0"/>
+
+                <!-- Find a place or NPC. Reads the GW2 wiki's location text aloud —
+                     the only source for NPC locations (the game API has none). -->
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="FindBox" Style="{StaticResource InputBox}"
+                             KeyDown="FindBox_KeyDown"
+                             AutomationProperties.Name="Find a place or NPC"
+                             AutomationProperties.HelpText="Type a place or NPC name and press Enter to hear where it is, from the wiki."/>
+                    <Button Grid.Column="1" Style="{StaticResource HCButton}" Content="🔎 Find"
+                            Margin="8,0,0,0" Click="Find_Click"
+                            AutomationProperties.Name="Look up where this place or NPC is"/>
+                </Grid>
+                <TextBlock x:Name="FindResult"
+                           Text="Find a place or NPC (e.g. &quot;Arborstone&quot; or a vendor name) to hear where it is."
+                           Foreground="{DynamicResource MutedBrush}"
+                           FontSize="{DynamicResource GlobalFontSizeSmall}"
+                           TextWrapping="Wrap" Margin="0,8,0,0"/>
             </StackPanel>
         </Border>
 
         <!-- Filters -->
-        <WrapPanel Grid.Row="1" Margin="0,0,0,10">
+        <StackPanel Grid.Row="1" Margin="0,0,0,10">
+        <WrapPanel Margin="0,0,0,10">
             <CheckBox x:Name="FilterWaypoints" Content="Waypoints" IsChecked="True"
                       Foreground="White" Margin="0,0,12,0" Checked="Filter_Changed" Unchecked="Filter_Changed"/>
             <CheckBox x:Name="FilterPOIs" Content="POIs" IsChecked="True"
@@ -47,6 +81,8 @@
                       Foreground="White" Margin="0,0,12,0" Checked="Filter_Changed" Unchecked="Filter_Changed"/>
         </WrapPanel>
 
+        </StackPanel>
+
         <!-- Sonar controls -->
         <Border Grid.Row="2"
                 Background="#22222B"
@@ -55,31 +91,65 @@
                 CornerRadius="6"
                 Padding="12,8"
                 Margin="0,0,0,10">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <CheckBox x:Name="SonarEnabled" Grid.Column="0"
+                              Content="🎵 Sonar" Foreground="White"
+                              VerticalAlignment="Center"
+                              Checked="Sonar_Changed" Unchecked="Sonar_Changed"/>
+                    <!-- Finer, gentler volume: 0–100% in 1% steps, so the quiet end
+                         (where it sits nicely under game audio) is easy to dial in. -->
+                    <Slider x:Name="SonarVolumeSlider"
+                            Grid.Column="1"
+                            Minimum="0" Maximum="100" Value="30"
+                            SmallChange="1" LargeChange="5" TickFrequency="5"
+                            IsSnapToTickEnabled="False"
+                            VerticalAlignment="Center"
+                            Margin="12,0"
+                            ValueChanged="SonarVolume_ValueChanged"
+                            AutomationProperties.Name="Sonar volume percent"/>
+                    <TextBlock x:Name="SonarVolumeLabel" Grid.Column="2"
+                               Text="30%" Foreground="White" VerticalAlignment="Center"
+                               MinWidth="44" TextAlignment="Right"/>
+                </Grid>
+                <CheckBox x:Name="SonarHeartbeat" Content="Gentle heartbeat (soft, steady pulse)"
+                          Foreground="White" Margin="0,6,0,0"
+                          Checked="Heartbeat_Changed" Unchecked="Heartbeat_Changed"
+                          AutomationProperties.HelpText="A calm, slow, steady pulse that doesn't speed up as you approach, so it stays under the game audio."/>
+            </StackPanel>
+        </Border>
+
+        <!-- Sonar sound picker -->
+        <Border Grid.Row="3"
+                Background="#22222B"
+                BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <CheckBox x:Name="SonarEnabled" Grid.Column="0"
-                          Content="🎵 Sonar" Foreground="White"
-                          VerticalAlignment="Center"
-                          Checked="Sonar_Changed" Unchecked="Sonar_Changed"/>
-                <Slider x:Name="SonarVolumeSlider"
-                        Grid.Column="1"
-                        Minimum="0.1" Maximum="1.0" Value="0.5"
-                        TickFrequency="0.05"
-                        VerticalAlignment="Center"
-                        Margin="12,0"
-                        ValueChanged="SonarVolume_ValueChanged"/>
-                <TextBlock x:Name="SonarVolumeLabel" Grid.Column="2"
-                           Text="50%" Foreground="White" VerticalAlignment="Center"
-                           MinWidth="40" TextAlignment="Right"/>
+                <TextBlock Grid.Column="0" Text="Sound" Foreground="White"
+                           VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ComboBox x:Name="SonarSoundCombo" Grid.Column="1"
+                          SelectionChanged="SonarSound_Changed"
+                          AutomationProperties.Name="Sonar sound"
+                          AutomationProperties.HelpText="Choose which ping sound the sonar uses."/>
+                <Button Grid.Column="2" Style="{StaticResource SecondaryButton}"
+                        Content="▶ Test" Margin="10,0,0,0" Padding="10,4"
+                        Click="SonarPreview_Click"
+                        AutomationProperties.Name="Play a sample of the selected sonar sound"/>
             </Grid>
         </Border>
 
         <!-- Action buttons -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,10">
+        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,0,0,10">
             <Button Style="{StaticResource PrimaryButton}"
                     Content="🔊 Read Nearest 3"
                     Click="ReadNearest_Click"/>
@@ -90,16 +160,91 @@
                     ToolTip="Refresh from API"/>
         </StackPanel>
 
-        <!-- Nearest list -->
-        <Border Grid.Row="4"
+        <!-- Nearest list — tap/select a row to guide there. -->
+        <Border Grid.Row="6"
                 Background="#22222B"
                 BorderBrush="{DynamicResource SurfaceBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Nearest 5 — pick one to guide there"
+                           Foreground="{DynamicResource MutedBrush}"
+                           FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,8"/>
                 <StackPanel x:Name="NearestList"/>
-            </ScrollViewer>
+            </StackPanel>
         </Border>
     </Grid>
+    </ScrollViewer>
+    </TabItem>
+
+    <!-- ── Guides: pick a trail to be walked along ────────────────────────── -->
+    <TabItem Header="Guides" AutomationProperties.Name="Guides tab: choose a trail to follow">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="8,8,14,8">
+            <TextBlock Text="Guides" FontWeight="Bold" Foreground="White" FontSize="20"/>
+            <TextBlock x:Name="GuideIntro" Foreground="White" TextWrapping="Wrap"
+                       FontSize="15" Margin="0,4,0,10"
+                       AutomationProperties.LiveSetting="Polite"
+                       Text="Pick a guide and you'll be walked along it: the voice calls the turns, and a soft sound tells you if you drift off the path."/>
+
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBox x:Name="GuideFilter" Grid.Column="0" Style="{StaticResource InputBox}"
+                         TextChanged="GuideFilter_Changed"
+                         AutomationProperties.Name="Filter guides by name"/>
+                <Button x:Name="StopGuideBtn" Grid.Column="1" Style="{StaticResource HCButton}" Margin="8,0,0,0"
+                        Content="✖ Stop guide" Click="StopGuide_Click"
+                        AutomationProperties.Name="Stop guide. No guide is running."/>
+            </Grid>
+
+            <Border Background="#0F0F16" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1"
+                    CornerRadius="5" Padding="10,7" Margin="0,0,0,10">
+                <TextBlock x:Name="GuideStatus" Foreground="White" TextWrapping="Wrap"
+                           FontSize="16" FontWeight="SemiBold"
+                           AutomationProperties.LiveSetting="Polite"
+                           Text="No guide selected."/>
+            </Border>
+
+            <Border Background="#0F0F16" BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                    BorderThickness="1" CornerRadius="6" Padding="10">
+                <StackPanel x:Name="GuideList"/>
+            </Border>
+
+            <!-- One control: how big. Nothing else. -->
+            <TextBlock Text="Guide size" FontWeight="Bold" Foreground="White" FontSize="16" Margin="0,16,0,6"/>
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="52"/></Grid.ColumnDefinitions>
+                <Slider x:Name="MarkerSizeSlider" Grid.Column="0" Minimum="16" Maximum="400" VerticalAlignment="Center"
+                        ValueChanged="MarkerSize_Changed" AutomationProperties.Name="Guide trail size"/>
+                <TextBlock x:Name="MarkerSizeLabel" Grid.Column="1" Text="110" Foreground="White" FontSize="15" TextAlignment="Right" VerticalAlignment="Center"/>
+            </Grid>
+
+            <TextBlock Text="Marker packs" FontWeight="Bold" Foreground="White" FontSize="16" Margin="0,16,0,6"/>
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <ComboBox x:Name="MarkerCategoryCombo" Grid.Column="0" SelectionChanged="MarkerCategory_Changed"
+                          AutomationProperties.Name="Marker points to guide to by sound"/>
+                <Button Grid.Column="1" Style="{StaticResource HCButton}" Margin="8,0,0,0" Content="📁 Import pack"
+                        Click="ImportMarkers_Click"
+                        AutomationProperties.Name="Import a TacO or marker-pack file"
+                        AutomationProperties.HelpText="Import a .taco, .xml or .trl marker pack. Its guides then appear in the list above."/>
+            </Grid>
+            <CheckBox x:Name="MarkerVisualToggle" Content="Also show marker points on screen" Foreground="White"
+                      FontSize="15" Margin="0,8,0,4" Checked="MarkerVisual_Changed" Unchecked="MarkerVisual_Changed"
+                      AutomationProperties.HelpText="Draw the chosen category's marker points on screen as big, high-contrast, animated markers. They disappear as you reach each one."/>
+            <TextBlock x:Name="MarkerStatus" Foreground="{DynamicResource MutedBrush}"
+                       FontSize="{DynamicResource GlobalFontSizeSmall}" TextWrapping="Wrap" Margin="0,4,0,0"
+                       AutomationProperties.LiveSetting="Polite"
+                       Text="Import a pack to add more guides."/>
+
+            <!-- Credit where it's due: this feature exists because of TacO and the
+                 marker-pack community's open format and freely-shared packs. -->
+            <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"
+                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,10,0,0"
+                       Text="Guides use the open TacO / BlishHUD pack format (.taco, .xml, .trl). Huge thanks to TacO (GW2TacO), BlishHUD, and the marker-pack community — none of this would be possible without their work. Import your own packs; Echoes Unseen ships none."/>
+        </StackPanel>
+    </ScrollViewer>
+    </TabItem>
+    </TabControl>
 </UserControl>

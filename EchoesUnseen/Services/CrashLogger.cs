@@ -33,6 +33,7 @@ public static class CrashLogger
     /// </summary>
     public static void Log(string source, Exception ex)
     {
+        try { DiagLog.Log("ERROR", $"{source}: {ex.Message}"); } catch { }
         try
         {
             lock (_lock)

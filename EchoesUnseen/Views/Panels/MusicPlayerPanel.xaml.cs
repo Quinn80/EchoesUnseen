@@ -48,7 +48,9 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
 
     // Auto-play / guide state
     private CancellationTokenSource? _playbackCts;
-    private readonly KeyPressService _keyPress = new();
+    private readonly KeyPressService _keyPress = new();   // fallback sender
+    private readonly AhkPlayer _ahk = new();              // primary: real AutoHotkey engine
+    private readonly SongCatalogService _catalog = new(); // online song search
 
     // Guide canvas rendering
     private DispatcherTimer? _guideTimer;
@@ -84,6 +86,7 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
             {
                 SongCombo.SelectedItem = _allSongs[0];
             }
+            InitGuideControls();
         }
         catch (Exception ex)
         {
@@ -102,7 +105,7 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
         IEnumerable<Song> filtered = _allSongs;
         if (!string.IsNullOrWhiteSpace(filter))
             filtered = _allSongs.Where(s => s.Name.Contains(filter, StringComparison.OrdinalIgnoreCase));
-        foreach (var s in filtered.Take(50))
+        foreach (var s in filtered.OrderBy(s => s.Name).Take(1000))
             SongCombo.Items.Add(s);
     }
 
@@ -141,7 +144,14 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
         try
         {
             var lib = new SongLibraryService(App.Settings);
-            lib.SaveExternalSong(name, instrument, bpm, abc);
+            int newId = lib.SaveExternalSong(name, instrument, bpm, abc);
+
+            if (newId < 0)
+            {
+                SetImportStatus($"\"{name}\" is already in your library — nothing added.");
+                _tts?.SpeakAsync($"{name} is already in your library.");
+                return;
+            }
 
             // Reload the library so the new song shows up everywhere immediately.
             _allSongs = lib.LoadAll();
@@ -149,13 +159,15 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
             SongCount.Text = $"{_allSongs.Count} songs";
 
             // Select the song we just added so the user can play it right away.
-            var added = _allSongs.FirstOrDefault(s => s.Name == name);
-            if (added != null) SongCombo.SelectedItem = added;
+            var justAdded = _allSongs.FirstOrDefault(s => s.Name == name);
+            if (justAdded != null) SongCombo.SelectedItem = justAdded;
 
             var skipNote = skipped > 0
                 ? $" {skipped} unsupported symbol(s) were skipped (GW2 instruments only have eight notes)."
                 : "";
-            SetImportStatus($"Saved \"{name}\" with {noteCount} notes for {instrument}.{skipNote} It's now in your library and ready to play in all three modes.");
+            var okMsg = $"Added \"{name}\" with {noteCount} notes. You now have {_allSongs.Count} songs.{skipNote}";
+            SetImportStatus(okMsg);
+            _tts?.SpeakAsync(okMsg);
 
             // Clear the entry fields for the next import (keep instrument + bpm).
             ImportName.Text = "";
@@ -166,6 +178,143 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
             CrashLogger.Log("ImportSave_Click", ex);
             SetImportStatus($"Could not save the song: {ex.Message}");
         }
+    }
+
+    /// <summary>Batch import: pick many .ahk/.mid/.txt/.abc files and add them all
+    /// to the library at once — so pulling a folder of songs isn't one-at-a-time.</summary>
+    private void ImportMany_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Choose song files to import (Ctrl+A selects all in a folder)",
+                Filter = "Song files (*.ahk;*.mid;*.midi;*.txt;*.abc)|*.ahk;*.mid;*.midi;*.txt;*.abc|All files (*.*)|*.*",
+                Multiselect = true,
+                CheckFileExists = true,
+            };
+            if (dlg.ShowDialog() != true) return;
+
+            var lib = new SongLibraryService(App.Settings);
+            int added = 0, already = 0, failed = 0;
+            foreach (var path in dlg.FileNames)
+            {
+                try
+                {
+                    var abc = FileToAbc(path, out int bpm, out int count);
+                    if (count == 0) { failed++; continue; }
+                    // Normalise so ABC/number/letters all end up consistent.
+                    var norm = SongLibraryService.NormalizeUserNotation(abc, out int n, out _);
+                    if (n == 0) { failed++; continue; }
+                    var name = System.IO.Path.GetFileNameWithoutExtension(path);
+                    if (lib.SaveExternalSong(name, "Lute", bpm, norm) < 0) already++;   // duplicate
+                    else added++;
+                }
+                catch (Exception ex) { CrashLogger.Log("ImportMany one", ex); failed++; }
+            }
+
+            _allSongs = lib.LoadAll();
+            RefreshSongCombo("");
+            SongCount.Text = $"{_allSongs.Count} songs";
+
+            // Clear, spoken confirmation of exactly what happened.
+            var parts = new List<string>();
+            parts.Add(added == 0 ? "No new songs added" : $"Added {added} new song{(added == 1 ? "" : "s")}");
+            if (already > 0) parts.Add($"{already} were already in your library");
+            if (failed > 0) parts.Add($"{failed} could not be read");
+            var msg = string.Join(". ", parts) + $". You now have {_allSongs.Count} songs.";
+            SetImportStatus(msg);
+            _tts?.SpeakAsync(msg);
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.Log("ImportMany_Click", ex);
+            SetImportStatus($"Batch import failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>Convert one song file (by extension) to ABC notation.</summary>
+    private static string FileToAbc(string path, out int bpm, out int count)
+    {
+        bpm = 100; count = 0;
+        var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+        if (ext == ".ahk")
+            return SongImportService.FromAhk(System.IO.File.ReadAllText(path), out bpm, out count);
+        if (ext is ".mid" or ".midi")
+            return SongImportService.FromMidi(path, out bpm, out count);
+        // .txt / .abc / anything else: treat the text as notation.
+        var text = System.IO.File.ReadAllText(path);
+        var abc = SongLibraryService.NormalizeUserNotation(text, out count, out _);
+        return abc;
+    }
+
+    // ── Find Songs (online search) ────────────────────────────────────────────
+    private async void FindSearch_Click(object sender, RoutedEventArgs e) => await DoFind();
+    private async void FindBox_KeyDown(object sender, KeyEventArgs e)
+    { if (e.Key == Key.Enter) await DoFind(); }
+
+    private async System.Threading.Tasks.Task DoFind()
+    {
+        FindStatus.Text = "Searching…";
+        _tts?.SpeakAsync("Searching.");
+        try
+        {
+            var all = await _catalog.GetAsync();
+            var q = FindBox.Text?.Trim() ?? "";
+            var hits = (string.IsNullOrWhiteSpace(q)
+                    ? all
+                    : all.Where(s => s.Name.Contains(q, StringComparison.OrdinalIgnoreCase)))
+                .OrderBy(s => s.Name).Take(500).ToList();
+
+            FindResults.Items.Clear();
+            foreach (var s in hits) FindResults.Items.Add(s);
+            if (hits.Count > 0) FindResults.SelectedIndex = 0;
+
+            if (all.Count == 0)
+            {
+                FindStatus.Text = "Couldn't reach the song library — check your internet connection.";
+                _tts?.SpeakAsync("Could not reach the song library.");
+            }
+            else
+            {
+                FindStatus.Text = $"Found {hits.Count} song{(hits.Count == 1 ? "" : "s")}. Choose one and press Add.";
+                _tts?.SpeakAsync($"Found {hits.Count} songs.");
+            }
+        }
+        catch (Exception ex) { FindStatus.Text = $"Search failed: {ex.Message}"; CrashLogger.Log("FindSearch", ex); }
+    }
+
+    private void FindAdd_Click(object sender, RoutedEventArgs e)
+    {
+        if (FindResults.SelectedItem is not SongCatalogService.CatalogSong cs)
+        {
+            FindStatus.Text = "Pick a song from the list first.";
+            _tts?.SpeakAsync("Pick a song from the list first.");
+            return;
+        }
+        try
+        {
+            var abc = SongLibraryService.NormalizeUserNotation(cs.Notation, out int nc, out _);
+            if (nc == 0) { FindStatus.Text = "That song had no playable notes."; return; }
+
+            var lib = new SongLibraryService(App.Settings);
+            int id = lib.SaveExternalSong(cs.Name, "Harp", 100, abc);
+            _allSongs = lib.LoadAll();
+            RefreshSongCombo("");
+            SongCount.Text = $"{_allSongs.Count} songs";
+
+            if (id < 0)
+            {
+                FindStatus.Text = $"\"{cs.Name}\" is already in your library.";
+                _tts?.SpeakAsync($"{cs.Name} is already in your library.");
+                return;
+            }
+            var added = _allSongs.FirstOrDefault(s => s.Name == cs.Name);
+            if (added != null) SongCombo.SelectedItem = added;
+            FindStatus.Text = $"Added \"{cs.Name}\". You now have {_allSongs.Count} songs.";
+            _tts?.SpeakAsync($"Added {cs.Name}. It's in your library.");
+        }
+        catch (Exception ex) { FindStatus.Text = $"Add failed: {ex.Message}"; CrashLogger.Log("FindAdd", ex); }
     }
 
     private void ImportClear_Click(object sender, RoutedEventArgs e)
@@ -183,19 +332,40 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
                 Title = "Choose a song file",
-                Filter = "Song files (*.txt;*.abc)|*.txt;*.abc|All files (*.*)|*.*",
+                Filter = "All song files (*.txt;*.abc;*.ahk;*.mid;*.midi)|*.txt;*.abc;*.ahk;*.mid;*.midi" +
+                         "|AutoHotkey scripts (*.ahk)|*.ahk|MIDI files (*.mid;*.midi)|*.mid;*.midi" +
+                         "|Text / ABC (*.txt;*.abc)|*.txt;*.abc|All files (*.*)|*.*",
                 CheckFileExists = true,
             };
             if (dlg.ShowDialog() != true) return;
 
-            var text = System.IO.File.ReadAllText(dlg.FileName);
-            ImportNotes.Text = text;
+            var ext = System.IO.Path.GetExtension(dlg.FileName).ToLowerInvariant();
+            int count;
+            if (ext == ".ahk")
+            {
+                var abc = SongImportService.FromAhk(System.IO.File.ReadAllText(dlg.FileName), out int bpm, out count);
+                if (count == 0) { SetImportStatus("No note keys (1-8) were found in that AutoHotkey script."); return; }
+                ImportNotes.Text = abc;
+                ImportBpm.Text = bpm.ToString();
+                SetImportStatus($"Read {count} notes from the AutoHotkey script (speed set to {bpm}). Check the name, then Convert and Save.");
+            }
+            else if (ext is ".mid" or ".midi")
+            {
+                var abc = SongImportService.FromMidi(dlg.FileName, out int bpm, out count);
+                if (count == 0) { SetImportStatus("Couldn't find a melody in that MIDI file."); return; }
+                ImportNotes.Text = abc;
+                ImportBpm.Text = bpm.ToString();
+                SetImportStatus($"Read {count} melody notes from the MIDI (speed set to {bpm}). MIDI is folded into the game's 8 notes, so tweak if needed, then Convert and Save.");
+            }
+            else
+            {
+                ImportNotes.Text = System.IO.File.ReadAllText(dlg.FileName);
+                SetImportStatus($"Loaded {System.IO.Path.GetFileName(dlg.FileName)}. Check the name and speed, then Convert and Save.");
+            }
 
             // Pre-fill the name from the file name if the user hasn't typed one.
             if (string.IsNullOrWhiteSpace(ImportName.Text))
                 ImportName.Text = System.IO.Path.GetFileNameWithoutExtension(dlg.FileName);
-
-            SetImportStatus($"Loaded {System.IO.Path.GetFileName(dlg.FileName)}. Check the name and speed, then Convert and Save.");
         }
         catch (Exception ex)
         {
@@ -228,11 +398,44 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
         if (SongCombo.SelectedItem is not Song s) return;
         _selectedSong = s;
         SelectedSongName.Text = s.Name;
-        SelectedSongMeta.Text = $"{s.Instrument} · {s.Bpm} BPM · by {s.Uploader}";
+        SelectedSongMeta.Text = $"{s.Instrument} · {s.Bpm} BPM";
         _parsedNotes = SongLibraryService.ParseAbc(s.Abc, s.Bpm);
         SheetText.Text = FormatSheet(s, _parsedNotes);
         RenderAutoNoteDisplay();
         RenderGuideCanvas(0);
+
+        // Sync the per-song instrument picker without re-triggering a save.
+        _syncingInstrument = true;
+        foreach (ComboBoxItem it in SongInstrumentCombo.Items)
+            if ((string)it.Content == s.Instrument) { SongInstrumentCombo.SelectedItem = it; break; }
+        if (SongInstrumentCombo.SelectedIndex < 0) SongInstrumentCombo.SelectedIndex = 0;
+        _syncingInstrument = false;
+    }
+
+    private bool _syncingInstrument;
+
+    /// <summary>
+    /// Change the instrument for the selected song. In Guild Wars 2 every
+    /// instrument uses the same eight keys, so this doesn't change what's played
+    /// — it labels the song for you and (for your own saved songs) is remembered.
+    /// </summary>
+    private void SongInstrument_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_syncingInstrument || _selectedSong == null) return;
+        if (SongInstrumentCombo.SelectedItem is not ComboBoxItem it) return;
+
+        var instrument = (string)it.Content;
+        _selectedSong.Instrument = instrument;
+        SelectedSongMeta.Text = $"{instrument} · {_selectedSong.Bpm} BPM";
+
+        try
+        {
+            // Persist for user songs; bundled songs update for the session only.
+            new SongLibraryService(App.Settings).UpdateInstrument(_selectedSong.Name, instrument);
+        }
+        catch (Exception ex) { CrashLogger.Log("SongInstrument_Changed", ex); }
+
+        _tts?.SpeakAsync($"Instrument set to {instrument}.");
     }
 
     private string FormatSheet(Song s, List<ParsedNote> notes)
@@ -272,32 +475,158 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
     }
 
     // ── Guide tab ────────────────────────────────────────────────────────────
+    private Views.GuideOverlay? MainGuide =>
+        (System.Windows.Application.Current?.MainWindow as EchoesUnseen.MainWindow)?.Guide;
+
     private void GuideStart_Click(object sender, RoutedEventArgs e)
     {
-        if (_parsedNotes.Count == 0) return;
+        if (_parsedNotes.Count == 0) { _tts?.SpeakAsync("Pick a song first."); return; }
+        var guide = MainGuide;
+        if (guide == null) return;
+
         GuideStartBtn.IsEnabled = false;
         GuideStopBtn.IsEnabled = true;
-        _guideStartTimeMs = 0;
-        _guideTimer?.Stop();
-        _guideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
-        _guideTimer.Tick += GuideTick;
-        _guideTimer.Start();
+
+        if (App.Settings.Current.GuideMode == "step")
+        {
+            guide.StartStep(_parsedNotes);
+            _tts?.SpeakAsync("Step guide started. Watch above your skill bar and press the lit key.");
+        }
+        else
+        {
+            guide.StartTimed(_parsedNotes, _selectedSong?.Bpm ?? 100, (float)TempoSlider.Value);
+            _tts?.SpeakAsync("Guide started. Follow the falling notes above your skill bar.");
+        }
+    }
+
+    // ── Guide appearance controls ─────────────────────────────────────────────
+    private bool _syncingGuide;
+    private static readonly (string name, string hex)[] GuideColors =
+    {
+        ("Theme accent", ""), ("Vivid Red", "#FFFF1744"), ("Neon Orange", "#FFFF6D00"),
+        ("Bright Gold", "#FFFFC400"), ("Electric Lime", "#FF76FF03"), ("Neon Green", "#FF00E676"),
+        ("Aqua Cyan", "#FF00E5FF"), ("Electric Blue", "#FF2979FF"), ("Vivid Violet", "#FFD500F9"),
+        ("Hot Pink", "#FFFF1B8E"), ("White", "#FFFFFFFF"),
+    };
+
+    private void InitGuideControls()
+    {
+        _syncingGuide = true;
+        var s = App.Settings.Current;
+        foreach (ComboBoxItem it in GuideModeCombo.Items)
+            if ((string)it.Tag == s.GuideMode) { GuideModeCombo.SelectedItem = it; break; }
+        if (GuideModeCombo.SelectedIndex < 0) GuideModeCombo.SelectedIndex = 0;
+
+        foreach (var (name, hex) in GuideColors)
+            GuideColorCombo.Items.Add(new ComboBoxItem { Content = name, Tag = hex });
+        foreach (ComboBoxItem it in GuideColorCombo.Items)
+            if ((string)it.Tag == s.GuideColor) { GuideColorCombo.SelectedItem = it; break; }
+        if (GuideColorCombo.SelectedIndex < 0) GuideColorCombo.SelectedIndex = 0;
+
+        GuideSpeedSlider.Value = s.GuideLeadMs;
+        GuideSpeedLabel.Text = $"{s.GuideLeadMs / 1000.0:0.0}s";
+        GuideSizeSlider.Value = s.GuideSize;
+        GuideSizeLabel.Text = $"{(int)(s.GuideSize * 100)}%";
+        GuideTones.IsChecked = s.GuideTones;
+        _syncingGuide = false;
+    }
+
+    private void GuideMode_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_syncingGuide || GuideModeCombo.SelectedItem is not ComboBoxItem it) return;
+        App.Settings.Current.GuideMode = (string)it.Tag;
+        App.Settings.NotifyChanged();
+    }
+    private void GuideColor_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_syncingGuide || GuideColorCombo.SelectedItem is not ComboBoxItem it) return;
+        App.Settings.Current.GuideColor = (string)it.Tag;
+        App.Settings.NotifyChanged();
+    }
+    private void GuideSpeed_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_syncingGuide || GuideSpeedLabel == null) return;
+        App.Settings.Current.GuideLeadMs = (int)GuideSpeedSlider.Value;
+        GuideSpeedLabel.Text = $"{GuideSpeedSlider.Value / 1000.0:0.0}s";
+        App.Settings.NotifyChanged();
+    }
+    private void GuideSize_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_syncingGuide || GuideSizeLabel == null) return;
+        App.Settings.Current.GuideSize = GuideSizeSlider.Value;
+        GuideSizeLabel.Text = $"{(int)(GuideSizeSlider.Value * 100)}%";
+        App.Settings.NotifyChanged();
+    }
+    private void GuideTones_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_syncingGuide || GuideTones == null) return;
+        App.Settings.Current.GuideTones = GuideTones.IsChecked == true;
+        App.Settings.NotifyChanged();
+    }
+
+    private int _guideNoteCursor;
+
+    // Key '1'..'8' → a C-major scale pitch, so guide mode plays the melody by ear.
+    // A blind player can follow the rhythm and relative pitch and press along —
+    // which a purely visual scrolling canvas never allowed.
+    private static readonly double[] KeyPitch =
+        { 261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25 };
+
+    private void PlayGuideTone(char key)
+    {
+        if (key < '1' || key > '8') return;
+        double hz = KeyPitch[key - '1'];
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            try
+            {
+                int sr = 44100, len = sr * 160 / 1000;
+                var buf = new float[len];
+                for (int n = 0; n < len; n++)
+                {
+                    double env = n < len * 0.15 ? n / (len * 0.15)
+                               : n > len * 0.6 ? (len - n) / (len * 0.4) : 1.0;
+                    buf[n] = (float)(Math.Sin(2 * Math.PI * hz * n / sr) * env * 0.22);
+                }
+                var prov = new NAudio.Wave.BufferedWaveProvider(
+                    NAudio.Wave.WaveFormat.CreateIeeeFloatWaveFormat(sr, 1)) { BufferLength = len * 4 + 64 };
+                var bytes = new byte[len * 4];
+                Buffer.BlockCopy(buf, 0, bytes, 0, bytes.Length);
+                prov.AddSamples(bytes, 0, bytes.Length);
+                var outp = new NAudio.Wave.WaveOutEvent();
+                outp.Init(prov);
+                outp.PlaybackStopped += (_, _) => { try { outp.Dispose(); } catch { } };
+                outp.Play();
+            }
+            catch (Exception ex) { CrashLogger.Log("PlayGuideTone", ex); }
+        });
     }
 
     private void GuideStop_Click(object sender, RoutedEventArgs e)
     {
         GuideStartBtn.IsEnabled = true;
         GuideStopBtn.IsEnabled = false;
-        _guideTimer?.Stop();
-        _guideTimer = null;
-        RenderGuideCanvas(0);
+        MainGuide?.Stop();
     }
 
     private void GuideTick(object? sender, EventArgs e)
     {
         _guideStartTimeMs += 40;
         var tempo = (float)TempoSlider.Value;
-        RenderGuideCanvas(_guideStartTimeMs * tempo);
+        var elapsed = _guideStartTimeMs * tempo;
+        RenderGuideCanvas(elapsed);
+
+        // Sound each note as its moment arrives, so the guide works by ear.
+        double cum = 0;
+        for (int i = 0; i < _guideNoteCursor && i < _parsedNotes.Count; i++) cum += _parsedNotes[i].BeatMs;
+        while (_guideNoteCursor < _parsedNotes.Count && cum <= elapsed)
+        {
+            var note = _parsedNotes[_guideNoteCursor];
+            if (!note.IsRest) PlayGuideTone(note.Key);
+            cum += note.BeatMs;
+            _guideNoteCursor++;
+        }
+
         // Stop when the last note has passed the press line
         var totalMs = _parsedNotes.Sum(n => n.BeatMs);
         if (_guideStartTimeMs * tempo > totalMs + 2000) // 2s grace after end
@@ -401,18 +730,45 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
         if (_parsedNotes.Count == 0) return;
         AutoStartBtn.IsEnabled = false;
         AutoStopBtn.IsEnabled = true;
+        KeyPressService.ResetSendLog();   // so the log records if input is blocked this run
         _playbackCts = new CancellationTokenSource();
-        AutoStatus.Text = "Playing... click GW2 window now if you haven't yet.";
 
+        // Auto-play sends key presses to whatever window has FOCUS. The moment
+        // this button is clicked, THIS overlay has focus — so without a pause the
+        // notes went to the overlay, not the game, and nothing happened. Count
+        // down first (spoken) so the user can click Guild Wars 2 and give it focus.
         try
         {
-            await _keyPress.PlayAsync(
-                _parsedNotes,
-                (float)TempoSlider.Value,
-                onNoteChange: i => HighlightNote(i),
-                _playbackCts.Token);
-            AutoStatus.Text = "Done.";
+            for (int c = 3; c >= 1; c--)
+            {
+                if (_playbackCts.IsCancellationRequested) { AutoStatus.Text = "Cancelled."; return; }
+                AutoStatus.Text = $"Click the Guild Wars 2 window now. Playing in {c}…";
+                _tts?.SpeakAsync(c == 3 ? $"Click Guild Wars 2. Playing in {c}." : c.ToString());
+                await Task.Delay(1000, _playbackCts.Token);
+            }
+            // Play via the REAL AutoHotkey engine (bundled) — the reliable path
+            // that works exactly like the scripts you know. Fall back to our own
+            // sender only if AutoHotkey couldn't be extracted for some reason.
+            if (_ahk.IsAvailable && _ahk.Play(_parsedNotes, (float)TempoSlider.Value, leadMs: 600))
+            {
+                AutoStatus.Text = "Playing…";
+                while (_ahk.IsPlaying && !_playbackCts.IsCancellationRequested)
+                    await Task.Delay(150, _playbackCts.Token);
+                AutoStatus.Text = _playbackCts.IsCancellationRequested ? "Stopped." : "Done.";
+            }
+            else
+            {
+                AutoStatus.Text = "Playing…";
+                KeyPressService.ResetSendLog();
+                await _keyPress.PlayAsync(
+                    _parsedNotes,
+                    (float)TempoSlider.Value,
+                    onNoteChange: i => HighlightNote(i),
+                    _playbackCts.Token);
+                AutoStatus.Text = "Done.";
+            }
         }
+        catch (OperationCanceledException) { AutoStatus.Text = "Stopped."; }
         catch (Exception ex)
         {
             AutoStatus.Text = $"Error: {ex.Message}";
@@ -428,8 +784,38 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
 
     private void AutoStop_Click(object sender, RoutedEventArgs e)
     {
+        _ahk.Stop();
         _playbackCts?.Cancel();
         AutoStatus.Text = "Stopped.";
+    }
+
+    /// <summary>Relaunch the app elevated so Auto-Play keypresses can reach a GW2
+    /// window that is itself running as administrator (Windows blocks input from a
+    /// lower-privilege app to a higher one).</summary>
+    private void RunAsAdmin_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var exe = Environment.ProcessPath
+                      ?? System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+            if (string.IsNullOrEmpty(exe)) { AutoStatus.Text = "Couldn't find the app path."; return; }
+
+            var psi = new System.Diagnostics.ProcessStartInfo(exe)
+            {
+                UseShellExecute = true,
+                Verb = "runas",   // triggers the UAC elevation prompt
+            };
+            System.Diagnostics.Process.Start(psi);
+            // The new elevated instance will kill this one on startup (single-instance).
+            _tts?.SpeakAsync("Restarting as administrator.");
+            System.Windows.Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            // User cancelled the UAC prompt, or it failed.
+            CrashLogger.Log("RunAsAdmin", ex);
+            AutoStatus.Text = "Restart as administrator was cancelled or failed.";
+        }
     }
 
     private void HighlightNote(int index)
@@ -461,6 +847,7 @@ public partial class MusicPlayerPanel : UserControl, IPanel, IBackgroundPanel
 
     private void StopAll()
     {
+        _ahk.Stop();
         _playbackCts?.Cancel();
         _guideTimer?.Stop();
     }

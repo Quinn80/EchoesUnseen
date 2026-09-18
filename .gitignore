@@ -12,6 +12,10 @@ crash.log
 # Release binaries — distributed from the website, not committed
 *.exe
 
+# AutoHotkey (GPL-2.0) is bundled into the released build but not redistributed here:
+# download AutoHotkey64.exe from autohotkey.com and drop it in to build auto-play.
+EchoesUnseen/Resources/Ahk/
+
 # IDE / OS
 .vs/
 .idea/

@@ -76,48 +76,11 @@
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="0,10,0,0"/>
     </Style>
-    <Style TargetType="TabItem">
-        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="TabItem">
-                    <Border x:Name="Chip"
-                            CornerRadius="8,8,0,0"
-                            Padding="14,7"
-                            Margin="0,0,4,0"
-                            Background="#18FFFFFF"
-                            BorderThickness="0,0,0,2"
-                            BorderBrush="Transparent"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter ContentSource="Header"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          RecognizesAccessKey="True"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Chip" Property="Background"
-                                    Value="{DynamicResource SurfaceBrush}"/>
-                            <Setter TargetName="Chip" Property="BorderBrush"
-                                    Value="{DynamicResource PrimaryBrush}"/>
-                            <Setter Property="Foreground"
-                                    Value="{DynamicResource ForegroundBrush}"/>
-                        </Trigger>
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="IsMouseOver" Value="True"/>
-                                <Condition Property="IsSelected" Value="False"/>
-                            </MultiTrigger.Conditions>
-                            <Setter TargetName="Chip" Property="Background" Value="#2EFFFFFF"/>
-                            <Setter Property="Foreground"
-                                    Value="{DynamicResource ForegroundBrush}"/>
-                        </MultiTrigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
+    <!-- NOTE: the implicit TabItem style lives further down (search "TAB HEADERS").
+         There must be exactly ONE implicit TabItem style in this dictionary — two
+         entries with the same TargetType are a duplicate key and throw at load,
+         which silently discards the ENTIRE stylesheet (that was the b1.3
+         "nothing is themed / everything is white" bug). -->
 
     <!-- ═══════════════════════════════════════════════════════════════════
          HUD RING ARTWORK — bitmap shown as the radial HUD's background.
@@ -157,6 +120,25 @@
     <SolidColorBrush x:Key="ErrorBrush"          Color="#FFEF4444"/>
 
     <!-- ═══════════════════════════════════════════════════════════════════
+         DARK SYSTEM CHROME — the ComboBox drop-down list is a separate top-level
+         Popup whose background comes from WPF's stock Aero2 template, which uses
+         SystemColors.Window (white). We can't restyle that popup without a custom
+         ComboBox template (which broke selection on this overlay), so instead we
+         override the SYSTEM colour keys app-wide to dark values. This turns the
+         white frame around the dropdown items dark WITHOUT touching the template,
+         so selection keeps working AND the list reads dark. This app is all-dark,
+         so darkening system defaults is always on-theme.
+         ══════════════════════════════════════════════════════════════════ -->
+    <Color x:Key="{x:Static SystemColors.WindowColorKey}">#FF1E1E28</Color>
+    <Color x:Key="{x:Static SystemColors.WindowTextColorKey}">#FFF2F2F7</Color>
+    <Color x:Key="{x:Static SystemColors.ControlColorKey}">#FF20202A</Color>
+    <Color x:Key="{x:Static SystemColors.ControlTextColorKey}">#FFF2F2F7</Color>
+    <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#FF1E1E28"/>
+    <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="#FFF2F2F7"/>
+    <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#FF20202A"/>
+    <SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="#FFF2F2F7"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
          TYPOGRAPHY
          ══════════════════════════════════════════════════════════════════ -->
     <sys:Double x:Key="FontSizeSmall">12</sys:Double>
@@ -178,7 +160,14 @@
         <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Padding" Value="16,9"/>
+        <!-- Roomier than it looks on paper. Quinn drives this with a pointer she
+             cannot see, so every button wants to be a target she can land on rather
+             than aim at: 22 by 13 with a minimum height, which is comfortably past
+             the 44-pixel touch guidance once the border is counted. Set once here,
+             on the style everything else inherits from, so no tab is left behind. -->
+        <Setter Property="Padding" Value="22,13"/>
+        <Setter Property="MinHeight" Value="44"/>
+        <Setter Property="MinWidth" Value="96"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
@@ -211,13 +200,14 @@
         </Setter>
     </Style>
 
-    <!-- Secondary / outline variant. Given a SOLID dark fill rather than a
-         transparent one and a thicker accent border, so it stays readable over
-         whatever the game is drawing underneath. Label is plain white for
-         maximum contrast, with the accent carried by the border. -->
+    <!-- Secondary variant, in the THEME'S OWN second colour rather than a fixed
+         near-black. It used to be "#E61A1A24" in every theme, so picking Ember Forge
+         or Verdant recoloured everything around these and left the buttons themselves
+         a row of dead grey slabs. The label colour is chosen by luminance, so a bright
+         secondary reads as well as a deep one. -->
     <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
-        <Setter Property="Background" Value="#E61A1A24"/>
-        <Setter Property="Foreground" Value="#FFFFFFFF"/>
+        <Setter Property="Background" Value="{DynamicResource SecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnSecondaryBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -230,11 +220,13 @@
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <!-- Hover and press lift off the theme colour rather than
+                             jumping to a fixed grey that belongs to no theme. -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="#FF2A2A38"/>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource SecondaryHoverBrush}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="#FF3A3A48"/>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource SecondaryPressBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="border" Property="Opacity" Value="0.45"/>
@@ -309,25 +301,75 @@
          way to recolour the drop-down list itself, not just the closed field.
          ══════════════════════════════════════════════════════════════════ -->
 
-    <!-- Each row in the open list -->
-    <Style TargetType="ComboBoxItem">
-        <Setter Property="Foreground" Value="#FFFFFFFF"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Padding" Value="10,7"/>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TAB HEADERS — the Settings tabs. The stock WPF tab headers render as
+         near-white chips with faint text (hard to read and hard to tell which
+         is selected). These are dark, clearly bordered, and the SELECTED tab
+         fills with the theme accent so it's unmistakable by sight and to a
+         screen reader. Bold, spaced text keeps them legible.
+         ══════════════════════════════════════════════════════════════════ -->
+    <Style TargetType="TabItem">
+        <Setter Property="Foreground" Value="#FFF2F2F7"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="chip" Margin="2,0" Padding="14,8"
+                            CornerRadius="6,6,0,0"
+                            Background="#FF20202A"
+                            BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                            BorderThickness="1,1,1,0">
+                        <ContentPresenter ContentSource="Header"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="chip" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="False"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="chip" Property="Background" Value="#FF33333F"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="chip" Property="BorderBrush" Value="#FFFFFFFF"/>
+                            <Setter TargetName="chip" Property="BorderThickness" Value="2,2,2,0"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Each row in the open list. The default row Background is a SOLID dark
+         colour (not Transparent) so the white item text is readable even on
+         WPF's stock light popup — removing the custom ComboBox template fixed
+         selection but left white-on-white; this fills every row dark. The
+         highlighted row uses the theme accent so the current item is obvious. -->
+    <Style TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="#FFF2F2F7"/>
+        <Setter Property="Background" Value="#FF241830"/>
+        <Setter Property="Padding" Value="14,12"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeLarge}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBoxItem">
                     <Border x:Name="row" Background="{TemplateBinding Background}"
                             Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
-                        <ContentPresenter/>
+                        <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="row" Property="Background" Value="#FF3A3A48"/>
+                            <Setter TargetName="row" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="row" Property="Background" Value="#FF454556"/>
+                            <Setter TargetName="row" Property="Background" Value="#FF3A3A48"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -388,10 +430,18 @@
                             </Ellipse.Effect>
                         </Ellipse>
 
+                        <!-- Keyboard-focus ring: a bright, thick outline so the mic
+                             is obvious to find and navigate to by keyboard/NVDA. -->
+                        <Ellipse x:Name="focusRing" Margin="1" Stroke="#FFFFFFFF"
+                                 StrokeThickness="4" StrokeDashArray="2 1.5" Opacity="0"/>
+
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
 
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="focusRing" Property="Opacity" Value="1"/>
+                        </Trigger>
                         <!-- Idle breathing runs from load, forever. -->
                         <EventTrigger RoutedEvent="FrameworkElement.Loaded">
                             <BeginStoryboard>
@@ -442,31 +492,48 @@
 
     <!-- High-contrast pill button — bright white fill, black text, for the
          Piper voice Preview / Download actions so they stand out clearly. -->
+    <!-- High-contrast action button (Preview / Download / Save / Reset / Change).
+         DARK fill with a bright accent border and white label — readable on the
+         dark UI in every theme, instead of the previous bright-white fill that
+         read as a blank chip. Fills with the accent on hover/focus. -->
     <Style x:Key="HCButton" TargetType="Button">
-        <Setter Property="Foreground" Value="#FF000000"/>
-        <Setter Property="Background" Value="#FFFFFFFF"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
-        <Setter Property="Padding" Value="12,5"/>
+        <Setter Property="Padding" Value="12,6"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
+                    <!-- Filled in the theme accent so menu buttons are COLOURFUL and
+                         change with the theme (they were flat dark-grey before). The
+                         accent glow makes them pop against the game behind the panel;
+                         the label uses OnPrimary (auto black/white by luminance) so it
+                         stays readable on gold, cyan and magenta alike. -->
                     <Border x:Name="bd" Background="{TemplateBinding Background}"
                             CornerRadius="6" Padding="{TemplateBinding Padding}"
-                            BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="2">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            BorderBrush="#66FFFFFF" BorderThickness="1">
+                        <Border.Effect>
+                            <DropShadowEffect Color="{DynamicResource PrimaryColor}"
+                                              BlurRadius="12" ShadowDepth="0" Opacity="0.5"/>
+                        </Border.Effect>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource SecondaryBrush}"/>
                         </Trigger>
-                        <!-- Clearly "off": dim fill, muted label, dashed edge, so a
-                             disabled Preview reads as unavailable rather than broken. -->
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.75"/>
+                        </Trigger>
+                        <!-- Clearly "off": dim fill, muted label, so a disabled Preview
+                             reads as unavailable rather than broken. -->
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="bd" Property="Background" Value="#FF3A3A44"/>
                             <Setter TargetName="bd" Property="BorderBrush" Value="#FF6A6A78"/>
+                            <Setter TargetName="bd" Property="Effect" Value="{x:Null}"/>
                             <Setter Property="Foreground" Value="#FF9A9AA8"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -475,60 +542,137 @@
         </Setter>
     </Style>
 
-    <!-- The dropdown control itself -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         CHECKBOX — big, high-contrast toggles. The stock WPF checkbox is a tiny
+         13px box that a low-vision user has to magnify to hit. This makes the box
+         large, the label track the global font size, and the WHOLE row a click
+         target, with a clear accent fill + tick when on. Implicit style, so every
+         toggle in the app (filters, feature switches, compass options) gets it.
+         ══════════════════════════════════════════════════════════════════ -->
+    <Style TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+        <Setter Property="FontSize" Value="{DynamicResource GlobalFontSize}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,3"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <!-- Transparent padding makes the whole row an easy target. -->
+                    <Border Background="Transparent" Padding="4,6" SnapsToDevicePixels="True">
+                        <StackPanel Orientation="Horizontal">
+                            <Border x:Name="box" Width="28" Height="28" CornerRadius="6"
+                                    Background="#FF20202A" VerticalAlignment="Center"
+                                    BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="2">
+                                <Path x:Name="tick" Stretch="Uniform" Margin="5"
+                                      Data="M 0,5 L 4,9 L 11,0"
+                                      Stroke="{DynamicResource OnPrimaryBrush}" StrokeThickness="2.6"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round" Visibility="Collapsed"/>
+                            </Border>
+                            <ContentPresenter Margin="12,0,0,0" VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="box" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter TargetName="tick" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="box" Property="BorderBrush" Value="#FFFFFFFF"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The dropdown control itself.
+         This template is the CANONICAL WPF ComboBox structure — a ToggleButton
+         bound to IsDropDownOpen, a ContentPresenter for the selected item, and a
+         Popup named PART_Popup hosting an ItemsPresenter. Because it keeps that
+         exact wiring, mouse AND keyboard selection work just like the stock
+         template (important for screen-reader users) — but now the CLOSED field
+         is dark too. The stock Windows (Aero2) template drew the closed field
+         with a light button chrome that ignored Background, which is why the
+         un-opened dropdowns still looked white. -->
     <Style TargetType="ComboBox">
-        <Setter Property="Foreground" Value="#FFFFFFFF"/>
-        <Setter Property="Background" Value="#FF2A2A32"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
-        <Setter Property="Height" Value="34"/>
+        <Setter Property="Foreground" Value="#FFF2F2F7"/>
+        <Setter Property="Background" Value="#FF241830"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeLarge}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="12,9"/>
+        <Setter Property="MinHeight" Value="44"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
                     <Grid>
-                        <ToggleButton x:Name="toggle" Focusable="False"
-                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                      ClickMode="Press">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- The closed field. Dark, themed border. -->
+                        <Border x:Name="fieldBorder" Grid.ColumnSpan="2"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"/>
+
+                        <!-- Invisible toggle over the whole field opens/closes the list. -->
+                        <ToggleButton Grid.ColumnSpan="2" Focusable="False" ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                             <ToggleButton.Template>
                                 <ControlTemplate TargetType="ToggleButton">
-                                    <Border Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                            BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                            BorderThickness="1" CornerRadius="4">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="26"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Path Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                  Data="M 0 0 L 8 0 L 4 5 Z" Fill="#FFFFFFFF"/>
-                                        </Grid>
-                                    </Border>
+                                    <Border Background="Transparent"/>
                                 </ControlTemplate>
                             </ToggleButton.Template>
                         </ToggleButton>
 
-                        <ContentPresenter x:Name="content" IsHitTestVisible="False"
+                        <!-- Selected item text. -->
+                        <ContentPresenter x:Name="contentSite" Grid.Column="0"
                                           Content="{TemplateBinding SelectionBoxItem}"
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                          Margin="10,0,30,0" VerticalAlignment="Center"
-                                          TextElement.Foreground="#FFFFFFFF"/>
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                          Margin="{TemplateBinding Padding}"
+                                          IsHitTestVisible="False"
+                                          HorizontalAlignment="Left" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
 
-                        <!-- StaysOpen MUST be false. With the default (true) the
-                             popup keeps mouse capture, so clicks on an item never
-                             commit a selection and the list appears frozen —
-                             which is exactly why voices couldn't be picked. -->
-                        <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
-                               StaysOpen="False" AllowsTransparency="True"
-                               Focusable="False" PopupAnimation="Slide">
-                            <Border Background="#FF2A2A32" BorderBrush="{DynamicResource SurfaceBorderBrush}"
-                                    BorderThickness="1" CornerRadius="4"
+                        <!-- Chevron — themed accent so the field reads as interactive. -->
+                        <Path Grid.Column="1" Margin="0,0,12,0"
+                              VerticalAlignment="Center" HorizontalAlignment="Center"
+                              Data="M0,0 L11,0 L5.5,7 Z"
+                              Fill="{DynamicResource PrimaryBrush}" IsHitTestVisible="False"/>
+
+                        <!-- The drop-down list. Dark card; rows come from the
+                             ComboBoxItem style above. -->
+                        <Popup x:Name="PART_Popup" Grid.ColumnSpan="2"
+                               Placement="Bottom" StaysOpen="False"
+                               AllowsTransparency="True" Focusable="False"
+                               PopupAnimation="Slide"
+                               IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                            <Border x:Name="dropDownBorder"
                                     MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
-                                    MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                    Margin="0,2,0,0"
+                                    Background="#FF241830"
+                                    BorderBrush="{DynamicResource PrimaryBrush}"
+                                    BorderThickness="2" CornerRadius="6">
                                 <ScrollViewer>
-                                    <!-- Contained navigation keeps arrow keys inside
-                                         the open list, so the dropdown is usable from
-                                         the keyboard and by a screen reader. -->
                                     <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
                                 </ScrollViewer>
                             </Border>
@@ -536,7 +680,13 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter TargetName="fieldBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="fieldBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="fieldBorder" Property="Opacity" Value="0.5"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

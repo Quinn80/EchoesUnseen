@@ -28,6 +28,10 @@ public class Song
     public string Source { get; set; } = "bundled";
     public string Uploader { get; set; } = "";
     public int Rating { get; set; }
+
+    /// <summary>The accessible name a screen reader reads for this item in a list.
+    /// Without this, NVDA read the type name ("EchoesUnseen.Models.Song").</summary>
+    public override string ToString() => Name;
 }
 
 /// <summary>

@@ -41,6 +41,10 @@ public class GlobalHotkeyService : IDisposable
     private readonly HwndSource _source;
     private readonly Dictionary<int, Action> _callbacks = new();
     private int _nextId = 1;
+
+    /// <summary>Combinations Windows refused, so the app can say so instead of appearing
+    /// to ignore a keypress. Static: the answer is the same for the whole session.</summary>
+    public static readonly List<string> Failed = new();
     private bool _disposed;
 
     public GlobalHotkeyService(System.Windows.Window window)
@@ -62,8 +66,18 @@ public class GlobalHotkeyService : IDisposable
         if (!TryParse(spec, out var modifiers, out var vk)) return false;
 
         var id = _nextId++;
-        if (!RegisterHotKey(_hwnd, id, modifiers, vk)) return false;
+        if (!RegisterHotKey(_hwnd, id, modifiers, vk))
+        {
+            // A hotkey that never registered used to fail in complete silence: Quinn
+            // pressed Ctrl+Shift+X for a screen capture all evening and nothing was
+            // saved, with nothing anywhere to say why. Windows gives the combination to
+            // whoever asked first, so this is a normal thing to hit and must be visible.
+            Failed.Add(spec);
+            DiagLog.Log("HOTKEY", $"FAILED to register {spec} — another program already owns it");
+            return false;
+        }
 
+        Failed.Remove(spec);
         _callbacks[id] = callback;
         return true;
     }
@@ -77,6 +91,7 @@ public class GlobalHotkeyService : IDisposable
         foreach (var id in _callbacks.Keys.ToList())
             UnregisterHotKey(_hwnd, id);
         _callbacks.Clear();
+        Failed.Clear();
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)

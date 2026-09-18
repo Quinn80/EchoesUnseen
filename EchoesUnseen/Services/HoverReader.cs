@@ -72,10 +72,15 @@ public sealed class HoverReader
         _dwell.Stop();
         if (!_settings.Current.HoverToRead || _pending == null) return;
 
-        // Don't talk over a deliberate read (e.g. the Oracle reading an article,
-        // or the startup greeting). Hover cues are for quiet exploration, so if
-        // speech is already in progress we simply stay out of the way.
+        // Hover cues are the LOWEST priority voice. Stay silent if:
+        //  • something is speaking right now, or
+        //  • a continuous background reader (Chat Reader, sonar) is running — so
+        //    casual mouse movement never chops up chat being read line by line, or
+        //  • speech ended less than 1.2s ago — avoids diving into the gap between
+        //    two chat lines.
         if (_tts.IsSpeaking) return;
+        if (_tts.BackgroundReaderActive) return;
+        if ((DateTime.UtcNow - _tts.LastSpeechEndedUtc).TotalMilliseconds < 1200) return;
 
         var text = FindReadableText(_pending);
         if (string.IsNullOrWhiteSpace(text)) return;
@@ -116,13 +121,21 @@ public sealed class HoverReader
             {
                 case TextBlock tb when !string.IsNullOrWhiteSpace(tb.Text):
                     return Trim(tb.Text);
+                case System.Windows.Documents.Run run when !string.IsNullOrWhiteSpace(run.Text):
+                    return Trim(run.Text);
                 case System.Windows.Controls.TextBox box when !string.IsNullOrWhiteSpace(box.Text):
                     return Trim(box.Text);
                 case ContentControl cc when cc.Content is string s && !string.IsNullOrWhiteSpace(s):
                     return Trim(s);
             }
 
-            node = VisualTreeHelper.GetParent(node);
+            // VisualTreeHelper.GetParent throws on ContentElements (Run, Span,
+            // Hyperlink) and Freezables — they're not Visuals. When the hover
+            // lands on inline text (a Run inside a TextBlock), walk the LOGICAL
+            // tree instead. This was an unhandled crash on the UI thread.
+            node = (node is Visual || node is System.Windows.Media.Media3D.Visual3D)
+                ? VisualTreeHelper.GetParent(node)
+                : LogicalTreeHelper.GetParent(node);
         }
         return null;
     }

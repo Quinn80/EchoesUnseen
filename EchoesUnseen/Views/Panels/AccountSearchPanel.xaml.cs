@@ -183,7 +183,62 @@ public partial class AccountSearchPanel : UserControl, IPanel
     private void RenderResults()
     {
         ResultsList.Children.Clear();
-        foreach (var item in _filtered)
+
+        // Group into collapsible sections by where the items live — one per
+        // character, plus Bank, Material Storage and Wallet. This keeps the whole
+        // account searchable at once (type a name and everything matching shows)
+        // while letting the user fold away characters they aren't interested in.
+        var groups = _filtered
+            .GroupBy(SectionOf)
+            .OrderBy(g => SectionOrder(g.Key))
+            .ThenBy(g => g.Key);
+
+        bool searching = !string.IsNullOrWhiteSpace(SearchBox.Text);
+
+        foreach (var group in groups)
+        {
+            var header = $"{group.Key}  ({group.Count()})";
+            var exp = new Expander
+            {
+                Header = header,
+                Foreground = Brushes.White,
+                IsExpanded = searching,           // open matching sections while searching
+                Margin = new Thickness(0, 0, 0, 6),
+            };
+            System.Windows.Automation.AutomationProperties.SetName(exp,
+                $"{group.Key}, {group.Count()} items. Expand to list them.");
+
+            var inner = new StackPanel { Margin = new Thickness(8, 4, 0, 4) };
+            foreach (var item in group)
+                inner.Children.Add(BuildItemRow(item));
+            exp.Content = inner;
+
+            ResultsList.Children.Add(exp);
+        }
+    }
+
+    /// <summary>Section a result belongs to: character name, or Bank / Materials / Wallet.</summary>
+    private static string SectionOf(AccountItem item)
+    {
+        var loc = item.Location;
+        if (loc.StartsWith("Bank", StringComparison.OrdinalIgnoreCase)) return "Bank";
+        if (loc.StartsWith("Material Storage", StringComparison.OrdinalIgnoreCase)) return "Material Storage";
+        if (loc.Equals("Wallet", StringComparison.OrdinalIgnoreCase)) return "Wallet";
+        // Character bags come through as "<Name> — bag N, slot N".
+        var dash = loc.IndexOf(" — ", StringComparison.Ordinal);
+        return dash > 0 ? loc[..dash] : loc;
+    }
+
+    private static int SectionOrder(string section) => section switch
+    {
+        "Bank" => 0,
+        "Material Storage" => 1,
+        "Wallet" => 3,
+        _ => 2, // characters in the middle
+    };
+
+    private Border BuildItemRow(AccountItem item)
+    {
         {
             var row = new Border
             {
@@ -249,7 +304,7 @@ public partial class AccountSearchPanel : UserControl, IPanel
                 }
             };
 
-            ResultsList.Children.Add(row);
+            return row;
         }
     }
 

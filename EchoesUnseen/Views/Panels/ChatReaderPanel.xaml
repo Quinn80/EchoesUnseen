@@ -11,6 +11,7 @@
             <RowDefinition Height="Auto"/>  <!-- Privacy banner -->
             <RowDefinition Height="Auto"/>  <!-- Controls -->
             <RowDefinition Height="Auto"/>  <!-- Scan interval + message count -->
+            <RowDefinition Height="Auto"/>  <!-- Pause in combat -->
             <RowDefinition Height="Auto"/>  <!-- Status -->
             <RowDefinition Height="*"/>     <!-- Recently-read -->
         </Grid.RowDefinitions>
@@ -62,8 +63,11 @@
             <StackPanel Grid.Column="0" Margin="0,0,8,0">
                 <TextBlock Text="Scan interval (seconds)" FontSize="{DynamicResource GlobalFontSizeSmall}"
                            Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,4"/>
+                <!-- Down to 1 s: with the vision model gone the scan is plain OCR, which
+                     is fast enough to run this often, and the confirm-twice rule costs a
+                     whole scan - so a short interval is what keeps callouts prompt. -->
                 <Slider x:Name="IntervalSlider"
-                        Minimum="2" Maximum="10" Value="3.5"
+                        Minimum="1" Maximum="10" Value="1.5"
                         TickFrequency="0.5"
                         ValueChanged="IntervalSlider_ValueChanged"/>
                 <TextBlock x:Name="IntervalLabel" Text="3.5s"
@@ -81,7 +85,16 @@
             </StackPanel>
         </Grid>
 
-        <TextBlock Grid.Row="3"
+        <!-- Its own row. This was in row 2 alongside the sliders and right-aligned, so it
+             was drawn straight over the "N messages" value under the second slider —
+             two controls stacked on the same spot, and the number unreadable. -->
+        <CheckBox x:Name="PauseCombatToggle" Grid.Row="3"
+                  Content="Pause chat while I'm in combat" Foreground="White"
+                  Checked="PauseCombat_Changed" Unchecked="PauseCombat_Changed"
+                  Margin="0,0,0,10" HorizontalAlignment="Left"
+                  AutomationProperties.HelpText="Stops reading chat while you're fighting, and resumes automatically when combat ends."/>
+
+        <TextBlock Grid.Row="4"
                    x:Name="StatusText"
                    Foreground="{DynamicResource MutedBrush}"
                    TextWrapping="Wrap"
@@ -89,7 +102,7 @@
                    Margin="0,0,0,8"/>
 
         <!-- Recently read list -->
-        <Border Grid.Row="4"
+        <Border Grid.Row="5"
                 Background="#22222B"
                 BorderBrush="{DynamicResource SurfaceBorderBrush}"
                 BorderThickness="1"

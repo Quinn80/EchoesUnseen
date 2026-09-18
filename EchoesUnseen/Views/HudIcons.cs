@@ -132,6 +132,22 @@ public static class HudIcons
                 Add(new EllipseGeometry(new Point(12.8, 12), 3, 3));
                 break;
 
+            case "events": // alarm clock (event timers)
+                Add(new EllipseGeometry(new Point(12, 13), 7.5, 7.5));
+                Add(Geometry.Parse("M12,13 L12,8.5"));   // minute hand
+                Add(Geometry.Parse("M12,13 L15,14.5"));  // hour hand
+                Add(Geometry.Parse("M6,4.5 L3.5,7"));    // left bell foot
+                Add(Geometry.Parse("M18,4.5 L20.5,7"));  // right bell foot
+                break;
+
+            case "vault": // a wand with a spark (Wizard's Vault)
+                Add(Geometry.Parse("M6.5,17.5 L15.5,8.5"));    // the wand
+                Add(Geometry.Parse("M14,7 L17,10"));           // its tip
+                Add(Geometry.Parse("M18,4 L18,8"));            // spark, upright
+                Add(Geometry.Parse("M16,6 L20,6"));            // spark, across
+                Add(new EllipseGeometry(new Point(6.5, 17.5), 1.6, 1.6));
+                break;
+
             default: // fallback dot
                 Add(new EllipseGeometry(new Point(12, 12), 4, 4));
                 break;

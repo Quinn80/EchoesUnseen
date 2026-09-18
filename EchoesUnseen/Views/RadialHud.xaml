@@ -123,11 +123,11 @@
                     </Ellipse.Fill>
                 </Ellipse>
 
-                <!-- Outer rim: hot-pink neon edge with bloom -->
-                <Ellipse Width="478" Height="478" IsHitTestVisible="False"
+                <!-- Outer rim: neon edge with bloom (re-tinted to the theme). -->
+                <Ellipse x:Name="OuterRim" Width="478" Height="478" IsHitTestVisible="False"
                          Stroke="#FFFF5ACE" StrokeThickness="3">
                     <Ellipse.Effect>
-                        <DropShadowEffect Color="#FFFF42C2" BlurRadius="26"
+                        <DropShadowEffect x:Name="OuterRimGlow" Color="#FFFF42C2" BlurRadius="26"
                                           ShadowDepth="0" Opacity="0.55"/>
                     </Ellipse.Effect>
                 </Ellipse>

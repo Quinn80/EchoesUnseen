@@ -49,5 +49,5 @@ Copy-Item $builtExe $dest -Force
 $sizeMb = [math]::Round((Get-Item $dest).Length / 1MB, 1)
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green
-Write-Host "  Beta build: $dest  ($sizeMb MB)"
+Write-Host ("  Beta build: {0}  ({1} MB)" -f $dest, $sizeMb)
 Write-Host "  Move this file into your Dropbox for the website."

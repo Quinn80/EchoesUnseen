@@ -1,3 +1,4 @@
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -58,8 +59,16 @@ public partial class MainWindow : Window
     public GlobalHotkeyService Hotkeys { get; private set; } = null!;
     public Gw2ApiService Gw2Api { get; private set; } = null!;
     public EarconService Earcons { get; private set; } = null!;
+    public KeyWatcher KeyWatch { get; private set; } = null!;
+    private WvwService? _wvw;
+    private MetaEventService? _meta;
     private HoverReader? _hoverReader;
     private CursorReader? _cursorReader;
+    /// <summary>Local-AI service (Ollama) for panels that want it (e.g. chat summary).</summary>
+
+    /// <summary>Re-read markers.json into the on-screen marker overlay (after import).</summary>
+    public void ReloadMarkerOverlay() => Markers?.ReloadMarkers();
+    private bool _loadedOnce;
 
     /// <summary>
     /// Panels are created once and kept, so a feature the user switched on stays
@@ -95,6 +104,11 @@ public partial class MainWindow : Window
         // timer below that uses Win32 GetCursorPos to do the hit-test ourselves.
         Loaded += (_, _) =>
         {
+            // WPF's Loaded can fire more than once (re-parenting) — guard so we
+            // don't subscribe PanelRequested twice (which double-fires panel opens
+            // and their announcements) or start two cursor-poll timers.
+            if (_loadedOnce) return;
+            _loadedOnce = true;
             RadialHud.PanelRequested += OnPanelRequested;
             StartCursorPolling();
         };
@@ -137,6 +151,7 @@ public partial class MainWindow : Window
 
         // 2a. Earcons — short audio cues confirming panel open/close.
         Earcons = new EarconService(App.Settings);
+        EarconService.Shared = Earcons;   // so the nav's interactive-item chime can play
 
         // 2b. GW2 REST API client (cached HttpClient + per-map caching)
         Gw2Api = new Gw2ApiService(App.Settings);
@@ -151,6 +166,20 @@ public partial class MainWindow : Window
         // Hand services down to the HUD so panels can use them.
         RadialHud.AttachServices(MumbleLink, Tts, Hotkeys, Earcons);
         RadialHud.KeyboardModeExited += (_, _) => ExitKeyboardMode();
+
+        Markers.AttachServices(MumbleLink);
+
+        // Guitar-Hero guide overlay + its read-only key watcher (step mode).
+        KeyWatch = new KeyWatcher();
+        Guide.AttachServices(Tts, KeyWatch);
+
+        // WvW awareness. (Combat alert was removed — it randomly played at full
+        // volume regardless of the setting; not worth the risk in an a11y app.)
+        _wvw = new WvwService(MumbleLink, Tts, Gw2Api);
+
+        // Meta-event / world-boss audio alarm (fixed daily clock; no game data needed).
+        _meta = new MetaEventService(Tts);
+
 
         // 4. Startup flourish + greeting — EVERY launch. The soft rising chime
         // plays first (a warm "the world opens" cue), then Nova greets the
@@ -245,6 +274,13 @@ public partial class MainWindow : Window
         {
             await Task.Delay(650); // let the chime swell first
             await Tts.SpeakAsync("Hello, Commander. Echoes Unseen is ready.");
+#if !DISTRIBUTION
+            // A test build says which hover reader it is running, so a test can never again
+            // exercise the wrong one without anyone hearing it.
+            await Tts.SpeakAsync(App.Settings.Current.HoverTargetingFusion
+                ? "Hover targeting: enhanced, OpenCV plus RapidOCR."
+                : "Hover targeting: classic.");
+#endif
 
             // First launch → open the Welcome card. It lists the starter controls
             // (built from the live keybinds, so it can't go stale) and reads them
@@ -256,8 +292,53 @@ public partial class MainWindow : Window
                 App.Settings.NotifyChanged();
                 OpenPanel("welcome");
             }
+
+            _ = CheckForUpdatesAsync();
+            PrewarmNavigation();
         }
         catch (Exception ex) { CrashLogger.Log("SpeakStartupAsync", ex); }
+    }
+
+    /// <summary>
+    /// Create the Trail Navigator in the background at launch and park it, so its
+    /// nav poll runs from the moment the app starts. That's what feeds the
+    /// always-on compass — without this, the compass stays blank until the user
+    /// opens Trail Navigator once. The panel is never shown here; it just lives
+    /// in the parked layer doing its background nav work like a closed panel.
+    /// </summary>
+    private void PrewarmNavigation()
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            try
+            {
+                if (_hosts.ContainsKey("trailnav")) return;
+                var host = new Views.PanelHost();
+                host.AttachServices(MumbleLink, Tts, Hotkeys, Gw2Api);
+                host.OpenPanel("trailnav");
+                host.CloseRequested += (_, _) => ClosePanel();
+                _hosts["trailnav"] = host;
+                if (!BackgroundPanels.Children.Contains(host))
+                    BackgroundPanels.Children.Add(host);
+            }
+            catch (Exception ex) { CrashLogger.Log("PrewarmNavigation", ex); }
+        }, System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    /// <summary>Best-effort update check a few seconds after launch. Announces a
+    /// newer release aloud (accessible) and once only; silent if up to date or
+    /// offline. Never blocks startup.</summary>
+    private async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            await Task.Delay(6000); // stay out of the way of the greeting
+            var info = await UpdateService.CheckAsync();
+            if (info == null) return;
+            await Tts.SpeakAsync(
+                $"An update is available: {info.LatestLabel}. Visit the Echoes Unseen download page to get the latest version.");
+        }
+        catch (Exception ex) { CrashLogger.Log("CheckForUpdatesAsync", ex); }
     }
 
     /// <summary>
@@ -295,12 +376,215 @@ public partial class MainWindow : Window
         Hotkeys.Register(kb.ReadUnderCursor, () => Dispatcher.Invoke(() =>
         {
             _cursorReader ??= new CursorReader(Tts);
+            // When local AI is on, the manual read DESCRIBES the region with the
+            // vision model; otherwise it OCRs as before.
             _ = _cursorReader.ReadAsync();
         }));
         Hotkeys.Register(kb.StopSpeaking,    () => Dispatcher.Invoke(() => Tts.StopSpeaking()));
         Hotkeys.Register(kb.ToggleHoverRead, () => Dispatcher.Invoke(ToggleHoverRead));
+        Hotkeys.Register(kb.QuietMode,       () => Dispatcher.Invoke(ToggleQuietMode));
+        Hotkeys.Register(kb.ReadObjective,   () => Dispatcher.Invoke(() =>
+        {
+            _cursorReader ??= new CursorReader(Tts);
+            _ = _cursorReader.ReadObjectiveAsync();
+        }));
+        // Spoken navigation: "which way?" clock check, and turn-by-turn on/off. Both
+        // reach the (pre-warmed) Trail Navigator, which owns the world-space target.
+        Hotkeys.Register(kb.GuideDirection,  () => Dispatcher.Invoke(() =>
+        {
+            var nav = Views.Panels.TrailNavigatorPanel.Current;
+            if (nav != null) nav.SpeakGuideDirection();
+            else _ = Tts.SpeakAsync("Navigation is still starting up.");
+        }));
+        Hotkeys.Register(kb.ToggleVoiceGuide, () => Dispatcher.Invoke(() =>
+        {
+            var nav = Views.Panels.TrailNavigatorPanel.Current;
+            if (nav != null) nav.ToggleVoiceGuide();
+            else _ = Tts.SpeakAsync("Navigation is still starting up.");
+        }));
+        Hotkeys.Register(kb.CopyWaypoint,    () => Dispatcher.Invoke(() =>
+        {
+            var nav = Views.Panels.TrailNavigatorPanel.Current;
+            if (nav != null) nav.CopyNearestWaypoint();
+            else _ = Tts.SpeakAsync("Navigation is still starting up.");
+        }));
+        Hotkeys.Register(kb.NextEvents,      () => Dispatcher.Invoke(() =>
+            MetaEventService.Shared?.AnnounceNext(3)));
+        Hotkeys.Register(kb.ReadBags,        () => Dispatcher.Invoke(() => _ = ReadBagSummaryAsync()));
+        Hotkeys.Register(kb.ReadWallet,      () => Dispatcher.Invoke(() => _ = ReadWalletAsync()));
+        Hotkeys.Register(kb.RecordBug,       () => Dispatcher.Invoke(ToggleBugRecording));
+        Hotkeys.Register(kb.GuideSelfCheck,  () => Dispatcher.Invoke(() =>
+        {
+            var nav = Views.Panels.TrailNavigatorPanel.Current;
+            if (nav != null) nav.SpeakSelfCheck();
+            else _ = Tts.SpeakAsync("Navigation is still starting up.");
+        }));
         Hotkeys.Register(kb.RecenterHud,     () => RadialHud.ResetPosition());
         Hotkeys.Register(kb.Quit,            () => Dispatcher.Invoke(QuitApp));
+
+        // Say once, out loud, which shortcuts Windows would not give us. Silently
+        // dropping a hotkey and letting the user press it forever is the worst option.
+        if (GlobalHotkeyService.Failed.Count > 0)
+        {
+            var lost = string.Join(", ", GlobalHotkeyService.Failed);
+            DiagLog.Log("HOTKEY", "unavailable this session: " + lost);
+            _ = Tts.SpeakAsync($"Note: {GlobalHotkeyService.Failed.Count} shortcut" +
+                (GlobalHotkeyService.Failed.Count == 1 ? " is" : "s are") +
+                " already used by another program and won't work: " + lost +
+                ". You can change them in Settings, Keybinds.");
+        }
+    }
+
+    /// <summary>Speak a quick birds-eye summary of the current character's bag space and
+    /// contents by rarity — an audible "how full am I?" without squinting at icons.</summary>
+    /// <summary>
+    /// Say how much money the account has, from the account rather than from the screen.
+    ///
+    /// Quinn asked for the gold in her inventory to be readable, and it went through OCR
+    /// because that is where the number is drawn. It half worked: the coin icons between
+    /// the figures come back as letters, the amount runs off the left of the capture box
+    /// if the pointer is on it, and in the end she zoomed the whole screen in so she
+    /// could aim at it. That is a lot of machinery for a number the API already knows to
+    /// the copper.
+    ///
+    /// Currency 1 is Coin, held as a total number of copper.
+    /// </summary>
+    private async Task ReadWalletAsync()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(App.Settings.Current.Gw2ApiKey))
+            {
+                await Tts.SpeakAsync("I need a Guild Wars 2 API key to read your money. "
+                                   + "You can add one in Settings, under API Keys.");
+                return;
+            }
+
+            var wallet = await Gw2Api.GetWalletAsync();
+            var coin = wallet?.FirstOrDefault(c => c.Id == 1);
+            if (coin == null)
+            {
+                await Tts.SpeakAsync("I couldn't read your money just now.");
+                return;
+            }
+
+            var total = coin.Value;
+            var gold = total / 10000;
+            var silver = total / 100 % 100;
+            var copper = total % 100;
+
+            // Say only the parts that are there - "3 silver, 5 copper" rather than
+            // "0 gold, 3 silver, 5 copper".
+            var parts = new List<string>();
+            if (gold > 0) parts.Add($"{gold} gold");
+            if (silver > 0) parts.Add($"{silver} silver");
+            if (copper > 0 || parts.Count == 0) parts.Add($"{copper} copper");
+
+            DiagLog.Log("WALLET", $"{gold}g {silver}s {copper}c");
+            await Tts.SpeakAsync(string.Join(", ", parts) + ".");
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.Log("MainWindow.ReadWalletAsync", ex);
+            await Tts.SpeakAsync("Something went wrong reading your money.");
+        }
+    }
+
+    private async Task ReadBagSummaryAsync()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(App.Settings.Current.Gw2ApiKey))
+            { _ = Tts.SpeakAsync("Set a Guild Wars 2 API key in Settings to read your bags."); return; }
+
+            var name = MumbleLink.Read()?.CharacterName;
+            if (string.IsNullOrWhiteSpace(name))
+            { _ = Tts.SpeakAsync("I can't tell which character you're on. Log into a character and try again."); return; }
+
+            _ = Tts.SpeakAsync($"Checking {name}'s bags.");
+            var inv = await Gw2Api.GetCharacterInventoryAsync(name);
+            if (inv?.Bags == null) { _ = Tts.SpeakAsync("Couldn't read your bags right now."); return; }
+
+            int total = 0, empty = 0;
+            var ids = new List<int>();
+            var counts = new Dictionary<int, int>();   // itemId -> stack count total
+            foreach (var bag in inv.Bags)
+            {
+                if (bag?.Inventory == null) continue;
+                foreach (var slot in bag.Inventory)
+                {
+                    total++;
+                    if (slot == null) { empty++; continue; }
+                    ids.Add(slot.Id);
+                    counts[slot.Id] = counts.GetValueOrDefault(slot.Id) + Math.Max(1, slot.Count);
+                }
+            }
+            if (total == 0) { _ = Tts.SpeakAsync($"{name} has no bags equipped."); return; }
+
+            var items = await Gw2Api.GetItemsAsync(ids.Distinct());
+            var rarity = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var it in items)
+            {
+                var r = it.Rarity ?? "Basic";
+                rarity[r] = rarity.GetValueOrDefault(r) + 1;   // count distinct item TYPES per rarity
+            }
+
+            // Lead with space, then call out the rarities that matter most.
+            string Part(string r) => rarity.TryGetValue(r, out var c) && c > 0 ? $"{c} {r.ToLower()}" : "";
+            var notable = new[] { "Legendary", "Ascended", "Exotic", "Rare", "Masterwork" }
+                .Select(Part).Where(p => p.Length > 0).ToList();
+            string rar = notable.Count > 0 ? " Item types: " + string.Join(", ", notable) + "." : "";
+
+            _ = Tts.SpeakAsync($"{name}: {empty} of {total} slots free.{rar}");
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.Log("ReadBagSummary", ex);
+            _ = Tts.SpeakAsync("Something went wrong reading your bags.");
+        }
+    }
+
+
+    /// <summary>
+    /// Start or stop a bug recording, speaking each transition.
+    ///
+    /// Spoken rather than shown, because the moment worth recording is usually the
+    /// moment you can least afford to go looking at a panel — and because there is no
+    /// point offering a blind user a recorder whose only "on" indicator is a red dot.
+    /// </summary>
+    private void ToggleBugRecording()
+    {
+        if (!App.Settings.Current.BugRecorderEnabled)
+        {
+            _ = Tts.SpeakAsync("Bug recording is switched off in Settings.");
+            return;
+        }
+
+        if (BugRecorderService.IsRecording)
+        {
+            var zip = BugRecorderService.Stop();
+            _ = Tts.SpeakAsync(zip == null
+                ? "Recording stopped, but the report could not be saved."
+                : "Recording stopped. Bug report saved to your Downloads folder, as a zip file starting Echoes Unseen bug.");
+            return;
+        }
+
+        BugRecorderService.AutoStopped -= OnBugRecordingAutoStopped;
+        BugRecorderService.AutoStopped += OnBugRecordingAutoStopped;
+
+        var dir = BugRecorderService.Start();
+        _ = Tts.SpeakAsync(dir == null
+            ? "Could not start recording."
+            : $"Bug recording started. Show me the problem, then press the same keys again to stop. It stops on its own after {BugRecorderService.MaxSeconds / 60} minutes.");
+    }
+
+    /// <summary>The two minutes ran out. Say so, so a recording that ended on its own is
+    /// never mistaken for one still running.</summary>
+    private void OnBugRecordingAutoStopped(string? zip)
+    {
+        Dispatcher.Invoke(() => _ = Tts.SpeakAsync(zip == null
+            ? "Recording reached its two minute limit, but the report could not be saved."
+            : "Recording finished at the two minute limit. Bug report saved to your Downloads folder."));
     }
 
     /// <summary>Flip hover-to-read and announce the new state.</summary>
@@ -313,20 +597,38 @@ public partial class MainWindow : Window
         _ = Tts.SpeakAsync(on ? "Hover to read on." : "Hover to read off.");
     }
 
+    /// <summary>Hush the always-on readers (chat, WvW, nav) while playing, without
+    /// turning anything off. The confirmation uses the default engine so it's heard
+    /// even while quiet mode is on.</summary>
+    private void ToggleQuietMode()
+    {
+        var quiet = !App.Settings.Current.QuietMode;
+        App.Settings.Current.QuietMode = quiet;
+        App.Settings.NotifyChanged();
+        Tts.StopSpeaking();
+        _ = Tts.SpeakAsync(quiet ? "Quiet mode on." : "Quiet mode off.");
+    }
+
     /// <summary>
     /// Quit. A transparent, no-activate, not-in-taskbar overlay can't be closed
     /// with Alt+F4 (that goes to the game underneath), so this hotkey is the
     /// reliable exit. Speaks a short goodbye first so a blind user hears it go.
     /// </summary>
-    private async void QuitApp()
+    private void QuitApp()
     {
-        try
-        {
-            Tts.StopSpeaking();
-            await Tts.SpeakAsync("Closing Echoes Unseen. Goodbye.");
-        }
+        // Fire the goodbye, but NEVER let speech block the quit. A short timer
+        // force-closes the app no matter what — so Ctrl+Shift+Q always works.
+        try { Tts.StopSpeaking(); _ = Tts.SpeakAsync("Closing Echoes Unseen. Goodbye."); }
         catch (Exception ex) { CrashLogger.Log("Quit hotkey", ex); }
-        finally { System.Windows.Application.Current.Shutdown(); }
+
+        var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1400) };
+        t.Tick += (_, _) =>
+        {
+            t.Stop();
+            try { System.Windows.Application.Current.Shutdown(); } catch { }
+            try { Environment.Exit(0); } catch { }
+        };
+        t.Start();
     }
 
     // ── Keyboard navigation mode ─────────────────────────────────────────────
@@ -380,6 +682,7 @@ public partial class MainWindow : Window
     /// </summary>
     public void OpenPanel(string panelId)
     {
+        DiagLog.Log("PANEL", $"open {panelId}");
         Dispatcher.Invoke(() =>
         {
             // Toggle: clicking the same panel that's already open closes it.
@@ -525,28 +828,163 @@ public partial class MainWindow : Window
 
             var cursorOverHud = RadialHud.IsScreenPointOverHud(screenPoint);
 
-            // Tell the HUD to update its visual hover state (opacity, drag hint).
-            // While a panel is open the wheel stays fully lit (v21.5) so the
-            // user can see and click other gems to switch panels.
+            // While a panel is open, only its CARD should capture clicks — the
+            // rest of the screen must pass clicks through to Guild Wars 2, so the
+            // player can still click the game (e.g. to give it focus for
+            // auto-play, or just to play). Previously an open panel forced the
+            // whole overlay to capture every click, freezing interaction with the
+            // game underneath.
+            bool overCard = false;
+            if (_panelOpen && PanelHost.Content is Views.PanelHost ph)
+                overCard = ph.GetCardScreenRect().Contains(screenPoint);
+
             RadialHud.UpdateCursorOver(cursorOverHud || _panelOpen);
 
-            // Decide click-through. Force it OFF while a panel is open, while
-            // keyboard-navigation mode is active, or while the wheel is being
-            // dragged — otherwise follow the cursor.
-            //
-            // The drag case matters: a fast drag lets the cursor briefly outrun
-            // the wheel and leave the hit circle. Without this check the very
-            // next poll re-enabled WS_EX_TRANSPARENT, which drops the mouse
-            // capture and aborts the drag — the wheel would stick after a few
-            // pixels of movement.
+            // Capture clicks only over the wheel or the open panel's card;
+            // everything else falls through to the game. Keyboard-nav mode and an
+            // active drag still force capture on.
             var shouldBeClickThrough =
-                !_panelOpen && !_keyboardMode && !RadialHud.IsDragging && !cursorOverHud;
+                !_keyboardMode && !RadialHud.IsDragging && !cursorOverHud && !overCard;
             SetClickThrough(shouldBeClickThrough);
+
+            // Auto hover-read of game content (opt-in): when the cursor rests over
+            // the game (not our HUD/panel) it OCRs and speaks what's under it.
+            MaybeAutoHoverRead(screenPoint, cursorOverHud || overCard);
         }
         catch (Exception ex)
         {
             CrashLogger.Log("PollCursor", ex);
         }
+    }
+
+    // ── Auto hover-to-read (game content) ────────────────────────────────────
+    private Point _hoverLastPt;
+    private DateTime _hoverRestStart = DateTime.MinValue;
+    private bool _hoverReadDone;
+
+    /// <summary>When enabled and the cursor rests still over the game for the dwell
+    /// time, OCR and speak what's under it — once per rest. Skipped over our own
+    /// UI and while the voice is busy.</summary>
+    private void MaybeAutoHoverRead(Point p, bool overOwnUi)
+    {
+        var s = App.Settings.Current;
+        // Only while Guild Wars 2 is the active window (you asked for in-game only),
+        // and NOT while Quiet Mode is on — so hushing the app also stops hover
+        // reading the 3D scene while you play.
+        if (!s.HoverReadGame || overOwnUi || s.QuietMode || !IsGw2Foreground())
+        {
+            _hoverRestStart = DateTime.MinValue;
+            _hoverReadDone = false;
+            return;
+        }
+        // Cursor moved enough → restart the dwell, and STOP TALKING ABOUT THE LAST THING.
+        //
+        // Moving off an item, or onto a different one, means you are done with what you
+        // were told about the old one. Carrying on reading it is the behaviour of a
+        // reader that has not noticed you moved. Only hover speech is stopped: queued
+        // chat and callouts keep their place.
+        if (Math.Abs(p.X - _hoverLastPt.X) > 6 || Math.Abs(p.Y - _hoverLastPt.Y) > 6)
+        {
+            if (_hoverReadDone) Tts.StopIfTagged(CursorReader.HoverTag);
+            _hoverLastPt = p;
+            _hoverRestStart = DateTime.UtcNow;
+            _hoverReadDone = false;
+
+            // WHAT THE SCREEN LOOKED LIKE BEFORE SHE STOPPED.
+            //
+            // Taken while the pointer is still moving, because the point of it is to
+            // catch the moment BEFORE the game has any reason to draw a tooltip. A few
+            // milliseconds on a thumbnail, and it turns "where is the text" into "what
+            // appeared" - which is the only question with a reliable answer when the
+            // game draws an item's name three hundred pixels from the item.
+            // Moving again, so the baseline may start following the screen once more.
+            // Without this the freeze latches for the rest of the session.
+            Services.Hover.TooltipFinder.Thaw();
+            Services.Hover.TooltipFinder.Remember(
+                Services.ScreenMetrics.MonitorAt((int)p.X, (int)p.Y));
+            return;
+        }
+        // The pointer has stopped. Whatever the baseline is now, it is from before the
+        // game had any reason to draw a tooltip - so hold it there.
+        Services.Hover.TooltipFinder.Freeze();
+
+        if (_hoverReadDone || _hoverRestStart == DateTime.MinValue) return;
+
+        int dwell = Math.Clamp(s.HoverReadDwellMs, 300, 3000);
+        if ((DateTime.UtcNow - _hoverRestStart).TotalMilliseconds < dwell) return;
+
+        // A HOVER READ NO LONGER WAITS FOR CHAT.
+        //
+        // These two guards used to hold a hover read back until the voice was idle, and
+        // until chat had been quiet for a second and a half. That was right when every
+        // utterance interrupted the one before it, because gaps were constant. It became
+        // wrong the moment chat got a queue: chat now speaks continuously in a busy map,
+        // so both guards were true almost always and hovering an inventory slot did
+        // nothing at all. That is what "hover is not working in inventory" was.
+        //
+        // Hover belongs to the immediate lane. It interrupts, reads, and the queued chat
+        // carries on afterwards - which is the whole reason the lanes exist.
+
+        // DON'T HOVER-READ THE CHAT BOX.
+        //
+        // The chat reader already owns that rectangle and reads it properly - grouped
+        // into messages, de-duplicated, names settled. Hovering over it made the cursor
+        // reader OCR the same pixels raw and speak the lot as one run-on utterance,
+        // channel tags and all: "Dewdman: or not. Inbis: unreal. Inbis: never rezzing
+        // anyone again. Finnbarr Maruun: durios open..." That was not a chat bug, which
+        // is where it looked like it was coming from. It was this.
+        if (OverChatRegion(p)) { _hoverRestStart = DateTime.MinValue; return; }
+
+        _hoverReadDone = true;
+        _cursorReader ??= new CursorReader(Tts);
+        // When local AI is on, describe the hovered thing with the vision model
+        // (much better than OCR); otherwise OCR + wiki lookup.
+        _ = _cursorReader.ReadAsync(enhance: true);
+    }
+
+    /// <summary>
+    /// Would a hover read here pick up the chat box the chat reader already owns?
+    ///
+    /// Two things were wrong with asking this the obvious way. The region is chosen
+    /// with a WPF overlay so it is stored in DIPs, while the pointer arrives from
+    /// GetCursorPos in physical pixels - at 125% the guarded area was a quarter
+    /// smaller than the real chat panel and sat up and to the left of it, so pointing
+    /// at the lower part of the chat walked straight past the guard.
+    ///
+    /// And the test was on the POINTER when the thing that matters is the BOX: it
+    /// reaches well below and to the right of the cursor, so it can be sitting over
+    /// the chat while the pointer is nowhere near it. Overlap is the question, not
+    /// containment.
+    /// </summary>
+    private static bool OverChatRegion(Point p)
+    {
+        var s = App.Settings.Current;
+        if (s.ChatRegionW < 4 || s.ChatRegionH < 4) return false;
+
+        var chat = Services.ScreenMetrics.DipToPhysical(
+            new Rect(s.ChatRegionX, s.ChatRegionY, s.ChatRegionW, s.ChatRegionH));
+
+        var (bw, bh, ix, iy) = CursorReader.BoxFor((int)p.X, (int)p.Y);
+        var box = new Rect(p.X - ix, p.Y - iy, bw, bh);
+
+        return box.IntersectsWith(chat);
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    /// <summary>True only when Guild Wars 2 is the active/foreground window.</summary>
+    private static bool IsGw2Foreground()
+    {
+        try
+        {
+            var h = GetForegroundWindow();
+            if (h == IntPtr.Zero) return false;
+            GetWindowThreadProcessId(h, out uint pid);
+            using var p = System.Diagnostics.Process.GetProcessById((int)pid);
+            return p.ProcessName.StartsWith("Gw2", StringComparison.OrdinalIgnoreCase);
+        }
+        catch { return false; }
     }
 
     private void OnClosed(object? sender, EventArgs e)

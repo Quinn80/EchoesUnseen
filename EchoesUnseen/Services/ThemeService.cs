@@ -151,6 +151,10 @@ public static class ThemeService
     // ── Current theme tracking ───────────────────────────────────────────────
     private static Theme _currentTheme = BuiltInThemes[0];
 
+    // Tracks whether High Contrast is active, so Apply() knows not to overwrite
+    // the black/white HC panel chrome with theme-derived gradients.
+    private static bool s_highContrastOn;
+
     /// <summary>Fires when the theme changes so subscribers can re-render custom visuals.</summary>
     public static event EventHandler<Theme>? ThemeChanged;
 
@@ -199,6 +203,7 @@ public static class ThemeService
     /// </summary>
     public static void ApplyHighContrast(bool on)
     {
+        s_highContrastOn = on;
         var res = System.Windows.Application.Current?.Resources;
         if (res == null) return;
 
@@ -288,9 +293,21 @@ public static class ThemeService
         // bright gold, so a fixed white foreground was unreadable on the light
         // accents (Solar Gold, Frost Bloom, Verdant). Pick black or white by the
         // accent's luminance so filled buttons stay legible in every theme.
-        var onPrimary = IsLightColor(theme.Primary) ? "#0A0A0F" : "#FFFFFF";
+        var onPrimary = BestLabelOn(theme.Primary);
         SetColor(res, "OnPrimaryColor", onPrimary);
         SetBrush(res, "OnPrimaryBrush", onPrimary);
+
+        // The SECONDARY button was a fixed near-black in every theme - "#E61A1A24" -
+        // so choosing Ember Forge or Verdant recoloured the panel around it and left a
+        // row of dead grey slabs in the middle. It is the theme's own second colour now,
+        // with its label picked black or white by luminance so a bright secondary
+        // (Neon Void's cyan) stays as readable as a deep one (Ember Forge's red).
+        var onSecondary = BestLabelOn(theme.Secondary);
+        SetColor(res, "OnSecondaryColor", onSecondary);
+        SetBrush(res, "OnSecondaryBrush", onSecondary);
+        SetBrush(res, "SecondaryHoverBrush", Lighten(theme.Secondary, 0.22));
+        SetBrush(res, "SecondaryPressBrush", Lighten(theme.Secondary, 0.38));
+        SetBrush(res, "PrimaryHoverBrush",   Lighten(theme.Primary, 0.18));
 
         SetBrush(res, "PrimaryBrush",        theme.Primary);
         SetBrush(res, "SecondaryBrush",      theme.Secondary);
@@ -303,7 +320,64 @@ public static class ThemeService
         SetBrush(res, "WarningBrush",        theme.Warning);
         SetBrush(res, "ErrorBrush",          theme.Error);
 
+        // ── Panel chrome, themed ────────────────────────────────────────────
+        // The pop-up frame (ornate border, card fill, glowing title) used fixed
+        // blue/pink gradients in every theme, so "everything changes with the
+        // theme" wasn't true. Rebuild all three from the theme's own colours so
+        // the whole panel — not just its contents — recolours on theme change.
+        // High Contrast overrides these afterwards when it's on.
+        if (!s_highContrastOn)
+        {
+            var filigree = new LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0),
+                EndPoint = new System.Windows.Point(1, 1),
+            };
+            filigree.GradientStops.Add(new GradientStop(ParseColor(theme.Primary), 0.0));
+            filigree.GradientStops.Add(new GradientStop(ParseColor(Darken(theme.Secondary, 0.35)), 0.35));
+            filigree.GradientStops.Add(new GradientStop(ParseColor(theme.Secondary), 0.65));
+            filigree.GradientStops.Add(new GradientStop(ParseColor(Darken(theme.Primary, 0.45)), 1.0));
+            res["PanelFiligreeBrush"] = Frozen(filigree);
+
+            var card = new LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0),
+                EndPoint = new System.Windows.Point(0, 1),
+            };
+            // A near-black card, but tinted toward the theme background so gold,
+            // green and blue themes each read differently instead of all-black.
+            card.GradientStops.Add(new GradientStop(ParseColor(Darken(theme.Background, 0.10)), 0.0));
+            card.GradientStops.Add(new GradientStop(ParseColor(Darken(theme.Background, 0.55)), 1.0));
+            res["PanelCardBrush"] = Frozen(card);
+
+            var title = new LinearGradientBrush
+            {
+                StartPoint = new System.Windows.Point(0, 0),
+                EndPoint = new System.Windows.Point(1, 0),
+            };
+            title.GradientStops.Add(new GradientStop(ParseColor(theme.Primary), 0.0));
+            title.GradientStops.Add(new GradientStop(ParseColor(theme.Secondary), 1.0));
+            res["PanelTitleBrush"] = Frozen(title);
+
+            SetBrush(res, "FocusBrush", theme.Primary);
+        }
+
         ThemeChanged?.Invoke(null, theme);
+    }
+
+    /// <summary>Darken a hex colour toward black by <paramref name="amount"/> (0..1).
+    /// Preserves the alpha channel. Used to derive panel-chrome gradients from the
+    /// theme's own accent/background colours.</summary>
+    private static string Darken(string hex, double amount)
+    {
+        try
+        {
+            var c = ParseColor(hex);
+            double k = Math.Clamp(1.0 - amount, 0, 1);
+            byte r = (byte)(c.R * k), g = (byte)(c.G * k), b = (byte)(c.B * k);
+            return $"#{c.A:X2}{r:X2}{g:X2}{b:X2}";
+        }
+        catch { return hex; }
     }
 
     /// <summary>
@@ -312,15 +386,58 @@ public static class ThemeService
     /// brightness perception), so gold and pale cyan count as "light" while a
     /// saturated blue does not.
     /// </summary>
-    private static bool IsLightColor(string hex)
+    /// <summary>
+    /// Black or white on this colour - whichever actually reads better.
+    ///
+    /// This used to be a luminance threshold: lighter than half, use black. That looks
+    /// reasonable and quietly fails, because luminance near the boundary does not tell
+    /// you which way the contrast falls. Ember Forge's orange sits just under the line,
+    /// so it took WHITE text and came out at 2.87 to 1 - below even the large-text
+    /// minimum, on a button in an app for people who cannot see well.
+    ///
+    /// Computing both and keeping the better one raises the worst button in any theme
+    /// from 2.87 to 4.94, so every one now clears AA.
+    /// </summary>
+    private static string BestLabelOn(string background)
+    {
+        const string Black = "#0A0A0F", White = "#FFFFFF";
+        return Contrast(Black, background) >= Contrast(White, background) ? Black : White;
+    }
+
+    /// <summary>WCAG contrast ratio between two colours, 1:1 to 21:1.</summary>
+    private static double Contrast(string a, string b)
+    {
+        double la = RelativeLuminance(a), lb = RelativeLuminance(b);
+        double hi = Math.Max(la, lb), lo = Math.Min(la, lb);
+        return (hi + 0.05) / (lo + 0.05);
+    }
+
+    private static double RelativeLuminance(string hex)
     {
         try
         {
-            var c = ParseColor(hex);
-            var lum = (0.2126 * c.R + 0.7152 * c.G + 0.0722 * c.B) / 255.0;
-            return lum > 0.55;
+            var c = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+            static double Ch(byte v)
+            {
+                double x = v / 255.0;
+                return x <= 0.03928 ? x / 12.92 : Math.Pow((x + 0.055) / 1.055, 2.4);
+            }
+            return 0.2126 * Ch(c.R) + 0.7152 * Ch(c.G) + 0.0722 * Ch(c.B);
         }
-        catch { return false; }
+        catch { return 0.5; }
+    }
+
+    /// <summary>Mix a colour toward white. Used for hover and press states so they lift
+    /// off the base colour instead of jumping to a fixed grey that belongs to no theme.</summary>
+    private static string Lighten(string hex, double amount)
+    {
+        try
+        {
+            var c = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+            byte Mix(byte v) => (byte)Math.Clamp(v + (255 - v) * amount, 0, 255);
+            return $"#{Mix(c.R):X2}{Mix(c.G):X2}{Mix(c.B):X2}";
+        }
+        catch { return hex; }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

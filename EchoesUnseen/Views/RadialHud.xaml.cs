@@ -84,7 +84,7 @@ public partial class RadialHud : UserControl
     {
         ("screen-reader", "Screen Reader",   "👁"),
         ("heart-quest",   "Heart Quests",    "❤"),
-        ("trail-nav",     "Trail Navigator", "🧭"),
+        ("trail-nav",     "Sonar Trails",    "🧭"),
         ("chat-reader",   "Chat Reader",     "💬"),
         ("voice-chat",    "Voice to Chat",   "🎙"),
         ("music",         "Music Player",    "🎵"),
@@ -93,6 +93,8 @@ public partial class RadialHud : UserControl
         ("trading",       "Trading Post",    "📈"),
         ("build",         "Build & Gear",    "🛡"),
         ("map",           "Map Completion",  "🗺"),
+        ("events",        "Event Timers",    "⏰"),
+        ("vault",         "Wizard's Vault",  "🪄"),
         ("settings",      "Settings",        "⚙"),
     };
 
@@ -153,6 +155,11 @@ public partial class RadialHud : UserControl
         StartSwirlAnimation();
         ApplyMinimiseSetting();
 
+        // Recolour the whole wheel whenever the theme changes.
+        ThemeService.ThemeChanged += OnThemeChanged;
+        Unloaded += (_, _) => ThemeService.ThemeChanged -= OnThemeChanged;
+        RetintForTheme(); // match the theme that's already active at load
+
         // Live settings: HUD scale and hidden buttons take effect immediately.
         // Themes need no bridge any more — the artwork uses DynamicResource, so
         // WPF re-renders it on a theme swap by itself.
@@ -177,6 +184,9 @@ public partial class RadialHud : UserControl
 
     // ── Live settings ────────────────────────────────────────────────────────
     private string _lastHiddenKey = "";
+
+    private void OnThemeChanged(object? sender, Models.Theme e) =>
+        Dispatcher.BeginInvoke(() => RetintForTheme());
 
     private void OnAppSettingsChanged(object? sender, Models.AppSettings s)
     {
@@ -253,7 +263,29 @@ public partial class RadialHud : UserControl
             const double c = BaseHudSize / 2;
             var dx = local.X - c;
             var dy = local.Y - c;
-            return (dx * dx + dy * dy) <= (c * c);   // squared distance — no sqrt
+
+            // MEASURE AGAINST THE SIZE THE WHEEL IS GOING TO BE, NOT THE SIZE IT IS
+            // MID-ANIMATION.
+            //
+            // MinimiseScale sits on RingContainer, so PointFromScreen divides the
+            // cursor by whatever the unfold animation happens to be part-way through.
+            // That made reaching for a gem a race the pointer could win: the wheel
+            // starts at half size, Quinn moves out towards where a gem will be
+            // (radius 158), and 120 ms into a 220 ms unfold the live radius is still
+            // about 144 - so she is "outside", the wheel folds up, and folding makes
+            // it smaller still. She could not get into Settings at all.
+            //
+            // Comparing against the TARGET scale gives the wheel its full catchment
+            // the instant it starts opening, and hysteresis stops a pixel of hand
+            // tremor at the rim from closing it.
+            var scaleNow = MinimiseScale.ScaleX;
+            if (scaleNow <= 0.01) scaleNow = MinimisedScale;
+            var scaleTarget = _minimised ? MinimisedScale : 1.0;
+
+            var limit = c * (scaleTarget / scaleNow);
+            if (_wasCursorOver) limit *= 1.15;        // easier to stay than to arrive
+
+            return (dx * dx + dy * dy) <= (limit * limit);   // squared — no sqrt
         }
         catch
         {
@@ -300,7 +332,7 @@ public partial class RadialHud : UserControl
         FocusButtonAt(_kbIndex, announce: false);
         _tts?.SpeakAsync(
             "Keyboard navigation on. Use the arrow keys to move around the wheel, " +
-            "Enter to open, Escape to exit. " + CurrentButtonLabel());
+            "Enter to open, Escape to exit. " + CurrentButtonLabel(), engineOverride: "winnatural");
     }
 
     /// <summary>Visual/state cleanup when MainWindow ends keyboard mode.</summary>
@@ -309,7 +341,7 @@ public partial class RadialHud : UserControl
         _keyboardMode = false;
         PreviewKeyDown -= OnKeyboardModeKeyDown;
         SetOpacity(IdleOpacity);
-        _tts?.SpeakAsync("Keyboard navigation off.");
+        _tts?.SpeakAsync("Keyboard navigation off.", engineOverride: "winnatural");
     }
 
     // ── Alt + arrow global navigation ────────────────────────────────────────
@@ -339,7 +371,9 @@ public partial class RadialHud : UserControl
         HighlightNav();
         SetOpacity(ActiveOpacity);
         RestartNavDimTimer();
-        _tts?.SpeakAsync(NavLabel());
+        // Alt+arrow nav has no screen-reader focus event, so the app voice is the
+        // only announcer here — always speak (just fix the pronunciation).
+        _tts?.SpeakAsync(Pronounce(NavLabel()), engineOverride: "winnatural");
     }
 
     /// <summary>Open the currently selected panel (Alt+Enter).</summary>
@@ -354,7 +388,7 @@ public partial class RadialHud : UserControl
         }
         if (ButtonsCanvas.Children[_navIndex] is Button b && b.Tag is string id)
         {
-            _tts?.SpeakAsync($"Opening {NavLabel()}.");
+            _tts?.SpeakAsync(Pronounce($"Opening {NavLabel()}."), engineOverride: "winnatural");
             PanelRequested?.Invoke(this, id);
         }
     }
@@ -372,6 +406,18 @@ public partial class RadialHud : UserControl
             ButtonsCanvas.Children[_navIndex] is Button b)
             return System.Windows.Automation.AutomationProperties.GetName(b);
         return string.Empty;
+    }
+
+    // Pronunciation fixes (e.g. "Oracle") are applied centrally in TtsService now,
+    // so labels pass through unchanged here.
+    private static string Pronounce(string s) => s;
+
+    /// <summary>Speak a wheel label with the app's own voice — unless the user has
+    /// turned that off to rely on their screen reader (avoids double-speaking).</summary>
+    private void SpeakHud(string text)
+    {
+        if (App.Settings.Current.SpeakHudNav)
+            _tts?.SpeakAsync(text, engineOverride: "winnatural");
     }
 
     private void RestartNavDimTimer()
@@ -418,7 +464,7 @@ public partial class RadialHud : UserControl
             case Key.Space:
                 if (ButtonsCanvas.Children[_kbIndex] is Button b && b.Tag is string id)
                 {
-                    _tts?.SpeakAsync($"Opening {CurrentButtonLabel()}.");
+                    _tts?.SpeakAsync(Pronounce($"Opening {CurrentButtonLabel()}."), engineOverride: "winnatural");
                     PanelRequested?.Invoke(this, id);
                 }
                 e.Handled = true;
@@ -438,7 +484,9 @@ public partial class RadialHud : UserControl
         if (ButtonsCanvas.Children[index] is Button btn)
         {
             btn.Focus(); // moves WPF keyboard focus → UIA focus event → screen reader announces
-            if (announce) _tts?.SpeakAsync(CurrentButtonLabel());
+            // Gated: a screen reader already reads the focused button, so the app
+            // voice here is optional (SpeakHudNav) to avoid double-speaking.
+            if (announce) SpeakHud(CurrentButtonLabel());
         }
     }
 
@@ -468,91 +516,81 @@ public partial class RadialHud : UserControl
         var visible = ButtonDefs.Where(b => !hidden.Contains(b.Id)).ToArray();
         if (visible.Length == 0) return;
 
-        double angleStep = 360.0 / visible.Length;
-        for (int i = 0; i < visible.Length; i++)
+        // Settings lives OUTSIDE the ring — a fixed, vibrant gear in the bottom-right
+        // corner — so the ring holds only the core play tools and stays quick to
+        // cycle. It's still added to the button list, so Alt+arrow navigation and
+        // NVDA reach it exactly like a ring gem (it's simply the last stop).
+        var ring = visible.Where(b => b.Id != "settings").ToArray();
+        var settings = visible.FirstOrDefault(b => b.Id == "settings");
+
+        double angleStep = 360.0 / Math.Max(1, ring.Length);
+        for (int i = 0; i < ring.Length; i++)
         {
-            var def = visible[i];
+            var def = ring[i];
             var baseAngle = (i * angleStep) - 90; // start at top
-            // Apply per-icon fine-tuning (only if the nudge table covers this index).
             var nudge = i < IconNudges.Length ? IconNudges[i] : (0.0, 0.0);
             var angleDeg = baseAngle + nudge.Item1;
             var radius = ButtonPlacementRadius + nudge.Item2;
             var angleRad = angleDeg * Math.PI / 180.0;
             var cx = HudSize / 2 + radius * Math.Cos(angleRad);
             var cy = HudSize / 2 + radius * Math.Sin(angleRad);
+            MakeGemButton(def, i, cx, cy, Neon(i));
+        }
 
-            // Each button carries its own neon hue, cycling pink → blue around
-            // the ring exactly as the design's neon(i) helper does.
-            var neon = Neon(i);
-
-            // Draw the button's frame, glow, hollow and node gem behind the
-            // icon at the SAME center point, so the icon always lands dead
-            // centre on its orb.
-            DrawGem(cx, cy, neon);
-
-            // Icon: solid bright neon stroke. The design strokes its 24-grid
-            // line icons with the button's `bright` colour and pulses a
-            // drop-shadow glow (icon-glow, 2.4s) rather than tinting the
-            // stroke — so the icon keeps full contrast at all times.
-            var iconVisual = HudIcons.Build(def.Id, IconSize, new SolidColorBrush(neon.Bright));
-
-            var btn = new Button
-            {
-                Width = ButtonSize,
-                Height = ButtonSize,
-                Content = iconVisual,
-                // ── Icon visibility (accessibility) ──
-                // The design's icon-glow: a coloured bloom in the button's own
-                // neon hue. Zero shadow depth keeps the halo even on all sides,
-                // and because the hollow beneath the icon is near-black, the
-                // bright stroke stays high-contrast for low-vision players.
-                Effect = new System.Windows.Media.Effects.DropShadowEffect
-                {
-                    Color = neon.Core,
-                    ShadowDepth = 0,      // 0 depth = even halo on all sides
-                    BlurRadius = 12,
-                    Opacity = 0.9,
-                },
-                Cursor = Cursors.Hand,
-                BorderThickness = new Thickness(0),
-                ToolTip = def.Label,
-                Background = System.Windows.Media.Brushes.Transparent,
-                BorderBrush = System.Windows.Media.Brushes.Transparent,
-                // Scale from the center so the zoom effect stays on the gem.
-                RenderTransformOrigin = new Point(0.5, 0.5),
-                RenderTransform = new ScaleTransform(1.0, 1.0),
-            };
-
-            // Pulse the icon's neon bloom (design: icon-glow, 2.4s), staggered
-            // per button so the ring shimmers rather than throbbing in unison.
-            AnimateIconGlow((System.Windows.Media.Effects.DropShadowEffect)btn.Effect, i);
-
-            // Hover + keyboard-focus zoom: the active gem grows ~25% so it's
-            // unmistakable which one is about to be activated. Works for both
-            // mouse users (MouseEnter) and keyboard-mode users (GotKeyboardFocus).
-            btn.MouseEnter += (_, _) => AnimateButtonScale(btn, 1.25);
-            btn.MouseLeave += (_, _) => AnimateButtonScale(btn, 1.0);
-            btn.GotKeyboardFocus += (_, _) => AnimateButtonScale(btn, 1.25);
-            btn.LostKeyboardFocus += (_, _) => AnimateButtonScale(btn, 1.0);
-            // Screen-reader announcement: NVDA / JAWS / Narrator will read out
-            // the button's purpose instead of just the emoji glyph.
-            System.Windows.Automation.AutomationProperties.SetName(btn, def.Label);
-            System.Windows.Automation.AutomationProperties.SetHelpText(btn,
-                $"Open the {def.Label} panel.");
-            // (Foreground is solid white with a dark halo — set above. The old
-            // animated gradient brush was removed: it reduced icon contrast.)
-            // Transparent rounded hit area — the gem in the artwork IS the
-            // visual; the button is only a click target sitting on top of it.
-            btn.Template = CreateRoundButtonTemplate();
-
-            btn.Tag = def.Id;
-            btn.Click += (_, _) => PanelRequested?.Invoke(this, def.Id);
-
-            Canvas.SetLeft(btn, cx - ButtonSize / 2);
-            Canvas.SetTop(btn, cy - ButtonSize / 2);
-            ButtonsCanvas.Children.Add(btn);
+        // The out-of-ring Settings gear: bottom-right corner (outside the ring
+        // circle), a warm gold hue so it reads as the distinct "utility" control.
+        if (settings.Id != null)
+        {
+            var gold = Color.FromRgb(0xFF, 0xC4, 0x00);
+            var goldNeon = new NeonColor(gold, Lighten(gold, 0.40), Darken(gold, 0.45));
+            double scx = HudSize - ButtonSize * 0.70;
+            double scy = HudSize - ButtonSize * 0.70;
+            MakeGemButton(settings, ring.Length, scx, scy, goldNeon);
         }
         // (Icon shimmer animation removed — icons are now solid white for contrast.)
+    }
+
+    /// <summary>Build one gem + its interactive button at (cx, cy) and add both to the
+    /// canvases. <paramref name="glowIndex"/> only staggers the glow animation.</summary>
+    private void MakeGemButton((string Id, string Label, string Icon) def, int glowIndex,
+                               double cx, double cy, NeonColor neon)
+    {
+        DrawGem(cx, cy, neon);
+
+        var iconVisual = HudIcons.Build(def.Id, IconSize, new SolidColorBrush(neon.Bright));
+        var btn = new Button
+        {
+            Width = ButtonSize,
+            Height = ButtonSize,
+            Content = iconVisual,
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = neon.Core, ShadowDepth = 0, BlurRadius = 12, Opacity = 0.9,
+            },
+            Cursor = Cursors.Hand,
+            BorderThickness = new Thickness(0),
+            ToolTip = def.Label,
+            Background = System.Windows.Media.Brushes.Transparent,
+            BorderBrush = System.Windows.Media.Brushes.Transparent,
+            RenderTransformOrigin = new Point(0.5, 0.5),
+            RenderTransform = new ScaleTransform(1.0, 1.0),
+        };
+
+        AnimateIconGlow((System.Windows.Media.Effects.DropShadowEffect)btn.Effect, glowIndex);
+
+        btn.MouseEnter += (_, _) => AnimateButtonScale(btn, 1.25);
+        btn.MouseLeave += (_, _) => AnimateButtonScale(btn, 1.0);
+        btn.GotKeyboardFocus += (_, _) => AnimateButtonScale(btn, 1.25);
+        btn.LostKeyboardFocus += (_, _) => AnimateButtonScale(btn, 1.0);
+        System.Windows.Automation.AutomationProperties.SetName(btn, def.Label);
+        System.Windows.Automation.AutomationProperties.SetHelpText(btn, $"Open the {def.Label} panel.");
+        btn.Template = CreateRoundButtonTemplate();
+        btn.Tag = def.Id;
+        btn.Click += (_, _) => PanelRequested?.Invoke(this, def.Id);
+
+        Canvas.SetLeft(btn, cx - ButtonSize / 2);
+        Canvas.SetTop(btn, cy - ButtonSize / 2);
+        ButtonsCanvas.Children.Add(btn);
     }
 
     /// <summary>
@@ -735,8 +773,56 @@ public partial class RadialHud : UserControl
 
     private static NeonColor Neon(int i)
     {
-        var (c, b, d) = NeonHex[((i % NeonHex.Length) + NeonHex.Length) % NeonHex.Length];
-        return new NeonColor(Hex(c), Hex(b), Hex(d));
+        // Follow the ACTIVE THEME rather than a fixed rainbow, so the whole wheel
+        // — gems, buttons, orbiting glyphs, data nodes, blips — recolours when the
+        // user picks a theme. Even positions use the primary accent, odd use the
+        // secondary, giving a two-tone ring in the theme's own colours.
+        var t = ThemeService.Current;
+        var baseColor = Hex((i % 2 == 0) ? t.Primary : t.Secondary);
+        return new NeonColor(baseColor, Lighten(baseColor, 0.40), Darken(baseColor, 0.45));
+    }
+
+    private static Color Lighten(Color c, double amt) => Color.FromArgb(c.A,
+        (byte)(c.R + (255 - c.R) * amt), (byte)(c.G + (255 - c.G) * amt), (byte)(c.B + (255 - c.B) * amt));
+    private static Color Darken(Color c, double amt) => Color.FromArgb(c.A,
+        (byte)(c.R * (1 - amt)), (byte)(c.G * (1 - amt)), (byte)(c.B * (1 - amt)));
+
+    /// <summary>
+    /// Re-tint the wheel to the current theme: the structural accent elements
+    /// (glow, rim, code-track edge, medallion frame) plus a full rebuild of the
+    /// procedural layers, which read their colours from <see cref="Neon"/>. The
+    /// centre logo image is untouched, so the emblem stays constant across themes.
+    /// </summary>
+    private void RetintForTheme()
+    {
+        try
+        {
+            var t = ThemeService.Current;
+            var primary = Hex(t.Primary);
+            var secondary = Hex(t.Secondary);
+            var primaryBrush = new SolidColorBrush(primary);
+            var secondaryBrush = new SolidColorBrush(secondary);
+
+            if (OuterRim != null) OuterRim.Stroke = primaryBrush;
+            if (OuterRimGlow != null) OuterRimGlow.Color = primary;
+            if (CodeTrack != null) CodeTrack.Stroke = primaryBrush;
+            if (MedallionFrame != null) MedallionFrame.Stroke = secondaryBrush;
+            if (GlowPink != null)
+            {
+                var g = new RadialGradientBrush { Center = new Point(0.5, 0.5), GradientOrigin = new Point(0.5, 0.5), RadiusX = 0.5, RadiusY = 0.5 };
+                g.GradientStops.Add(new GradientStop(WithAlpha(primary, 0.42), 0.40));
+                g.GradientStops.Add(new GradientStop(WithAlpha(secondary, 0.24), 0.55));
+                g.GradientStops.Add(new GradientStop(WithAlpha(secondary, 0.0), 0.70));
+                GlowPink.Fill = g;
+            }
+
+            // Rebuild everything that derives its colour from Neon().
+            BuildGlyphs();
+            BuildDataNodes();
+            BuildBlips();
+            BuildButtons();
+        }
+        catch (Exception ex) { CrashLogger.Log("RadialHud.RetintForTheme", ex); }
     }
 
     private static Color Hex(string s) => (Color)ColorConverter.ConvertFromString(s);
@@ -935,12 +1021,14 @@ public partial class RadialHud : UserControl
     }
 
     // ── Opacity / visibility ─────────────────────────────────────────────────
-    private void SetOpacity(double target)
+    private void SetOpacity(double target) => SetOpacity(target, TimeSpan.FromMilliseconds(300));
+
+    private void SetOpacity(double target, TimeSpan dur)
     {
         var anim = new DoubleAnimation
         {
             To = target,
-            Duration = TimeSpan.FromMilliseconds(300),
+            Duration = dur,
             EasingFunction = new QuadraticEase(),
         };
         RingContainer.BeginAnimation(OpacityProperty, anim);
@@ -951,7 +1039,9 @@ public partial class RadialHud : UserControl
     // 480px ring. Because the shrink is a RenderTransform on RingContainer, the
     // hit area shrinks with it automatically (PointFromScreen walks the whole
     // transform chain), so the logo is exactly as clickable as it looks.
-    private const double MinimisedScale = 0.38;
+    private const double MinimisedScale = 0.5;
+    // Visible enough to FIND without hunting with the mouse, but still unobtrusive.
+    private const double MinimisedOpacity = 0.5;
     private bool _minimised;
 
     private void SetMinimised(bool on, bool animate = true)
@@ -973,6 +1063,10 @@ public partial class RadialHud : UserControl
         InteractiveLayers.BeginAnimation(OpacityProperty, new DoubleAnimation(layerOpacity, dur));
         // Gems must not be clickable while they're invisible.
         InteractiveLayers.IsHitTestVisible = !on;
+
+        // Fade the whole medallion to ~15% while minimised so it's a faint,
+        // findable ghost rather than a bright logo sitting over the game.
+        if (on) SetOpacity(MinimisedOpacity, dur);
     }
 
     /// <summary>Apply the minimise setting immediately (used on load and on change).</summary>
