@@ -16,7 +16,7 @@
 Echoes Unseen runs as a transparent, click-through overlay on top of Guild Wars 2. A radial HUD wheel gives you twelve tools you drive entirely by keyboard and voice — nothing requires seeing the screen. Everything is spoken aloud by a natural local voice, and the whole app runs on your own machine.
 
 <p align="center">
-  <img src="EchoesUnseen/Resources/Images/hud-ring.png" alt="The Echoes Unseen radial HUD wheel" width="340">
+  <img src="docs/images/hud-wheel-b1.5.png" alt="The Echoes Unseen HUD: twelve glowing tool icons arranged in a ring around a compass rose and a blue dragon." width="360">
 </p>
 
 > **Current release: b1.5** · Windows 10/11 (64-bit) · Free (donations welcome) · *more updates to come.*
