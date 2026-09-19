@@ -20,7 +20,7 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="ItemSearchBox"
+            <TextBox x:Name="ItemSearchBox" AutomationProperties.Name="Search the Trading Post for an item"
                      Grid.Column="0"
                      Style="{StaticResource InputBox}"
                      KeyDown="ItemSearchBox_KeyDown"/>
@@ -60,7 +60,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
                         <TextBlock Text="Buy (highest)" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"/>
-                        <TextBlock x:Name="BuyPrice" FontWeight="Bold" Foreground="#4ADE80"/>
+                        <TextBlock x:Name="BuyPrice" FontWeight="Bold" Foreground="#22D3EE"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1">
                         <TextBlock Text="Sell (lowest)" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"/>

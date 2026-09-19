@@ -42,10 +42,98 @@ public partial class PanelHost : UserControl
         Loaded += (_, _) =>
         {
             Focus();
-            StartGlowRotation();
-            SpawnEmbers();
+            ApplyAccessibility();
             ApplyRememberedLayout(); // v21.3: open where the user last put a panel
         };
+        // A change on the Accessibility tab takes effect on the panel that is
+        // already open, not at the next launch.
+        Services.AccessibilityService.Changed += OnAccessibilityChanged;
+        Unloaded += (_, _) => Services.AccessibilityService.Changed -= OnAccessibilityChanged;
+    }
+
+    private void OnAccessibilityChanged(object? sender, Models.AccessibilitySettings a) =>
+        Dispatcher.BeginInvoke(new Action(ApplyAccessibility));
+
+    /// <summary>
+    /// Everything on this panel that the Vision Accessibility Suite governs:
+    /// how big it is drawn, whether its decoration moves, and whether the glow
+    /// behind the card is painted at all.
+    ///
+    /// The card is SCALED rather than re-laid-out, so nothing can reflow into a
+    /// broken shape at 130 per cent - and its maximum size grows with it, so the
+    /// larger card is genuinely larger rather than the same card magnified into
+    /// its own clip.
+    /// </summary>
+    private void ApplyAccessibility()
+    {
+        try
+        {
+            double scale = Services.AccessibilityService.InterfaceScale;
+            CardWrapper.LayoutTransform = scale > 1.001 || scale < 0.999
+                ? new System.Windows.Media.ScaleTransform(scale, scale)
+                : null;
+
+            bool decorative = Services.AccessibilityService.AllowAnimation(decorative: true, looping: true);
+            bool glow = !Services.AccessibilityService.ReduceGlow;
+
+            PanelGlow.Visibility = glow ? Visibility.Visible : Visibility.Collapsed;
+            EmberLayer.Visibility = decorative ? Visibility.Visible : Visibility.Collapsed;
+
+            if (decorative && glow) StartGlowRotation();
+            else PanelGlowRotate.BeginAnimation(System.Windows.Media.RotateTransform.AngleProperty, null);
+
+            if (decorative)
+            {
+                SpawnEmbers();
+                StartDecorativeMotion();
+            }
+            else
+            {
+                StopDecorativeMotion();
+            }
+        }
+        catch (Exception ex) { Services.CrashLogger.Log("PanelHost.ApplyAccessibility", ex); }
+    }
+
+    /// <summary>The bobbing crest and the light travelling along the divider.
+    /// Ornament only: they say nothing, so they are the first things to stop.</summary>
+    private void StartDecorativeMotion()
+    {
+        var bob = new System.Windows.Media.Animation.DoubleAnimation
+        {
+            To = -3,
+            Duration = TimeSpan.FromSeconds(2),
+            AutoReverse = true,
+            RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever,
+            EasingFunction = new System.Windows.Media.Animation.SineEase
+            { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut },
+        };
+        BadgeFloat.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, bob);
+
+        var flow = new System.Windows.Media.Animation.DoubleAnimation
+        {
+            From = -1, To = 1,
+            Duration = TimeSpan.FromSeconds(3.5),
+            RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever,
+        };
+        DividerFlow.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, flow);
+    }
+
+    private void StopDecorativeMotion()
+    {
+        BadgeFloat.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, null);
+        BadgeFloat.Y = 0;
+        DividerFlow.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, null);
+        DividerFlow.X = 0;
+        foreach (System.Windows.UIElement child in EmberLayer.Children)
+        {
+            child.BeginAnimation(OpacityProperty, null);
+            if (child.RenderTransform is System.Windows.Media.TranslateTransform t)
+            {
+                t.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, null);
+                t.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, null);
+            }
+        }
     }
 
     /// <summary>Slowly rotate the fire-glow behind the card (matches the HUD's

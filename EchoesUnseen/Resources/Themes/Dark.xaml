@@ -28,22 +28,65 @@
     <sys:Double x:Key="GlobalFontSize">22</sys:Double>
     <sys:Double x:Key="GlobalFontSizeSmall">12</sys:Double>
 
-    <!-- v21 FOCUS VISUAL — replaces WPF's faint dotted focus rectangle with a
-         solid, clearly visible outline everywhere. High Contrast switches
-         FocusBrush to pure white. -->
-    <SolidColorBrush x:Key="FocusBrush" Color="#FFFF1A8A"/>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VISION ACCESSIBILITY SUITE — every value below is a DEFAULT that
+         reproduces b1.5 exactly. AccessibilityService overwrites them from
+         Settings > Accessibility, after the theme and after High Contrast, so
+         what somebody needs in order to see the interface always wins. The
+         styles in this file read them through DynamicResource, which is what
+         makes a change take effect the moment it is made.
+         See VISION-ACCESSIBILITY-SUITE.md.
+         ══════════════════════════════════════════════════════════════════ -->
+    <sys:Double x:Key="UiScale">1.0</sys:Double>
+    <sys:Double x:Key="ControlMinHeight">44</sys:Double>
+    <sys:Double x:Key="ControlMinWidth">96</sys:Double>
+    <sys:Double x:Key="CheckBoxSize">28</sys:Double>
+    <sys:Double x:Key="TooltipFontSize">22</sys:Double>
+    <Thickness x:Key="ControlPadding">22,13,22,13</Thickness>
+    <Thickness x:Key="TabPadding">14,8,14,8</Thickness>
+    <Thickness x:Key="FieldPadding">12,9,12,9</Thickness>
+    <Thickness x:Key="UiBorderThickness">2</Thickness>
+    <Thickness x:Key="PanelBorderThickness">2</Thickness>
+    <Thickness x:Key="SelectedBarThickness">1,5,1,0</Thickness>
+    <FontWeight x:Key="UiFontWeight">Normal</FontWeight>
+    <FontWeight x:Key="SelectedFontWeight">Bold</FontWeight>
+    <!-- Glow is decoration: Reduce Glow takes these to zero and the EDGE remains,
+         because the edge is what makes a control readable. -->
+    <sys:Double x:Key="GlowOpacity">0.55</sys:Double>
+    <sys:Double x:Key="GlowBlur">14</sys:Double>
+    <sys:Double x:Key="GlowBlurSmall">12</sys:Double>
+    <!-- Decorative parts bind their Visibility here, so Reduce Decorative
+         Animation can silence storyboards declared in XAML that no code holds. -->
+    <Visibility x:Key="DecorativeVisibility">Visible</Visibility>
+    <sys:Double x:Key="DecorativeOpacity">1.0</sys:Double>
+    <SolidColorBrush x:Key="TooltipBackgroundBrush" Color="#F2101018"/>
+    <SolidColorBrush x:Key="TextBackdropBrush" Color="#88000000"/>
+
+    <!-- FOCUS VISUAL — replaces WPF's faint dotted focus rectangle with a solid,
+         clearly visible outline everywhere.
+
+         WHY IT IS WHITE ON BLACK AND NOT THE THEME ACCENT:
+         it used to be drawn in the theme's own accent, which meant the focus
+         ring around a primary button was the SAME colour as the button (1:1
+         contrast — invisible), and in Ember Forge or Abyss Blue the ring was a
+         single hue a red-blind or blue-weak eye can lose. A white ring inside a
+         black halo carries no hue at all: it is a brightness edge, so it is
+         visible on every theme, on any game scene behind the overlay, and to
+         every kind of colour vision. FocusBrush stays white in High Contrast
+         too — ThemeService no longer tints it. -->
+    <SolidColorBrush x:Key="FocusBrush" Color="#FFFFFFFF"/>
+    <sys:Double x:Key="FocusRingOuterThickness">4</sys:Double>
+    <sys:Double x:Key="FocusRingInnerThickness">2</sys:Double>
+    <ControlTemplate x:Key="FocusRingTemplate">
+        <Grid Margin="-3" SnapsToDevicePixels="True">
+            <Rectangle Stroke="#FF000000" StrokeThickness="{DynamicResource FocusRingOuterThickness}"
+                       RadiusX="6" RadiusY="6" SnapsToDevicePixels="True"/>
+            <Rectangle Stroke="{DynamicResource FocusBrush}" StrokeThickness="{DynamicResource FocusRingInnerThickness}"
+                       RadiusX="6" RadiusY="6" SnapsToDevicePixels="True"/>
+        </Grid>
+    </ControlTemplate>
     <Style x:Key="{x:Static SystemParameters.FocusVisualStyleKey}">
-        <Setter Property="Control.Template">
-            <Setter.Value>
-                <ControlTemplate>
-                    <Rectangle Margin="-2"
-                               StrokeThickness="2.5"
-                               Stroke="{DynamicResource FocusBrush}"
-                               RadiusX="4" RadiusY="4"
-                               SnapsToDevicePixels="True"/>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="Control.Template" Value="{StaticResource FocusRingTemplate}"/>
     </Style>
 
     <!-- v21 PANEL CHROME — the pop-up frame's border, card and title brushes,
@@ -117,7 +160,16 @@
     <SolidColorBrush x:Key="MutedBrush"          Color="#FFB8B8C8"/>
     <SolidColorBrush x:Key="SuccessBrush"        Color="#FF4ADE80"/>
     <SolidColorBrush x:Key="WarningBrush"        Color="#FFFACC15"/>
-    <SolidColorBrush x:Key="ErrorBrush"          Color="#FFEF4444"/>
+    <SolidColorBrush x:Key="ErrorBrush"          Color="#FFF87171"/>
+
+    <!-- Derived from the theme by ThemeService at startup. Defaults live here so
+         the very first frame, drawn before any theme is applied, still has a
+         label colour and a hover colour rather than a missing brush. -->
+    <SolidColorBrush x:Key="OnPrimaryBrush"      Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="OnSecondaryBrush"    Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="PrimaryHoverBrush"   Color="#FFFF52A5"/>
+    <SolidColorBrush x:Key="SecondaryHoverBrush" Color="#FFC03E5A"/>
+    <SolidColorBrush x:Key="SecondaryPressBrush" Color="#FFD46A80"/>
 
     <!-- ═══════════════════════════════════════════════════════════════════
          DARK SYSTEM CHROME — the ComboBox drop-down list is a separate top-level
@@ -165,9 +217,9 @@
              than aim at: 22 by 13 with a minimum height, which is comfortably past
              the 44-pixel touch guidance once the border is counted. Set once here,
              on the style everything else inherits from, so no tab is left behind. -->
-        <Setter Property="Padding" Value="22,13"/>
-        <Setter Property="MinHeight" Value="44"/>
-        <Setter Property="MinWidth" Value="96"/>
+        <Setter Property="Padding" Value="{DynamicResource ControlPadding}"/>
+        <Setter Property="MinHeight" Value="{DynamicResource ControlMinHeight}"/>
+        <Setter Property="MinWidth" Value="{DynamicResource ControlMinWidth}"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
@@ -180,7 +232,8 @@
                             Padding="{TemplateBinding Padding}">
                         <Border.Effect>
                             <DropShadowEffect Color="{DynamicResource PrimaryColor}"
-                                              BlurRadius="14" ShadowDepth="0" Opacity="0.55"/>
+                                              BlurRadius="{DynamicResource GlowBlur}" ShadowDepth="0"
+                                              Opacity="{DynamicResource GlowOpacity}"/>
                         </Border.Effect>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
@@ -261,21 +314,20 @@
          users (NVDA / JAWS / Narrator) who navigate with the keyboard and
          need to see which control currently has focus.
          ══════════════════════════════════════════════════════════════════ -->
+    <!-- The same ring the system focus style uses. It was a thin dashed line in
+         the theme accent, which disappeared against an accent-filled button and
+         ignored High Contrast entirely; both styles now draw one ring, so focus
+         looks identical wherever it lands. -->
     <Style x:Key="AppFocusVisualStyle">
-        <Setter Property="Control.Template">
-            <Setter.Value>
-                <ControlTemplate>
-                    <Rectangle StrokeThickness="2"
-                               Stroke="{DynamicResource PrimaryBrush}"
-                               StrokeDashArray="2,1"
-                               SnapsToDevicePixels="True"
-                               Margin="-3"/>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="Control.Template" Value="{StaticResource FocusRingTemplate}"/>
     </Style>
 
-    <!-- Apply the focus visual to all controls by default. -->
+    <!-- NOTE, because this looks like it does more than it does: a WPF implicit
+         style is keyed on the EXACT type, so this one reaches plain Controls
+         only — not Buttons, CheckBoxes or ComboBoxes. What actually gives every
+         control its focus ring is the SystemParameters.FocusVisualStyleKey style
+         at the top of this file. Both draw FocusRingTemplate now, so it no
+         longer matters which one a control happens to pick up. -->
     <Style TargetType="Control">
         <Setter Property="FocusVisualStyle" Value="{StaticResource AppFocusVisualStyle}"/>
     </Style>
@@ -283,15 +335,72 @@
     <!-- ═══════════════════════════════════════════════════════════════════
          GLOBAL DEFAULTS — all text and controls inherit theme foreground.
          ══════════════════════════════════════════════════════════════════ -->
+    <!-- Bold Text raises the weight of ordinary body text only; anything that
+         already sets its own weight (headings, values, button labels) keeps it. -->
     <Style TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
         <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
+        <Setter Property="FontWeight" Value="{DynamicResource UiFontWeight}"/>
     </Style>
 
     <Style TargetType="Label">
         <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
         <Setter Property="FontSize" Value="{StaticResource FontSizeBase}"/>
     </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TOOLTIP — the wheel's labels and every explanatory hint.
+
+         THE BUG THIS FIXES: there was no ToolTip style at all, so tooltips used
+         WPF's stock template — a pale, near-white card. The implicit TextBlock
+         style above paints every TextBlock in the app with the theme foreground,
+         which is white, and a tooltip's string content is rendered by exactly
+         such a TextBlock. White letters on a white card: the tooltip opened and
+         looked EMPTY. Lady Elyssa reported empty menu tooltips; this is why.
+
+         So: a dark card with the theme's border, white text at the body size,
+         and long enough on screen to be read slowly. -->
+    <Style TargetType="ToolTip">
+        <Setter Property="Foreground" Value="#FFFFFFFF"/>
+        <Setter Property="Background" Value="{DynamicResource TooltipBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="{DynamicResource UiBorderThickness}"/>
+        <Setter Property="FontSize" Value="{DynamicResource TooltipFontSize}"/>
+        <Setter Property="MaxWidth" Value="520"/>
+        <Setter Property="HasDropShadow" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6" Padding="12,9">
+                        <!-- The tooltip's text is a TextBlock that WPF generates, so
+                             the only way to reach it is a style in scope. This is
+                             also what pins the colour: without it the app-wide white
+                             TextBlock style painted white text on the stock pale
+                             tooltip card, and tooltips looked empty. -->
+                        <Border.Resources>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                                <Setter Property="TextWrapping" Value="Wrap"/>
+                                <Setter Property="FontSize" Value="{DynamicResource TooltipFontSize}"/>
+                            </Style>
+                        </Border.Resources>
+                        <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"
+                                          TextElement.FontSize="{TemplateBinding FontSize}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Tooltips that vanish after five seconds are no use to someone reading
+         slowly with a magnifier. The duration belongs to the control that OWNS
+         the tooltip, not to the tooltip, and an implicit style cannot reach
+         every control type at once — so App.OnStartup overrides the default
+         ToolTipService.ShowDuration for the whole app instead. -->
+
 
     <!-- ═══════════════════════════════════════════════════════════════════
          COMBOBOX (dropdowns) — dark grey field AND dark grey popup list with
@@ -315,7 +424,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
-                    <Border x:Name="chip" Margin="2,0" Padding="14,8"
+                    <Border x:Name="chip" Margin="2,0" Padding="{DynamicResource TabPadding}"
                             CornerRadius="6,6,0,0"
                             Background="#FF20202A"
                             BorderBrush="{DynamicResource SurfaceBorderBrush}"
@@ -325,9 +434,15 @@
                                           TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <!-- Selected is NOT just "filled with the accent": it also grows a
+                             thick bar along its top edge and sets its label bold, so the
+                             current tab is obvious without seeing the hue at all. -->
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="chip" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter TargetName="chip" Property="BorderThickness" Value="{DynamicResource SelectedBarThickness}"/>
+                            <Setter TargetName="chip" Property="BorderBrush" Value="#FFFFFFFF"/>
                             <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
+                            <Setter Property="FontWeight" Value="Bold"/>
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -336,9 +451,12 @@
                             </MultiTrigger.Conditions>
                             <Setter TargetName="chip" Property="Background" Value="#FF33333F"/>
                         </MultiTrigger>
+                        <!-- Focus is a ring all the way round the chip; selected is a bar
+                             along its top. Different shapes, so "where I am" and "what is
+                             open" never look like the same thing. -->
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="chip" Property="BorderBrush" Value="#FFFFFFFF"/>
-                            <Setter TargetName="chip" Property="BorderThickness" Value="2,2,2,0"/>
+                            <Setter TargetName="chip" Property="BorderThickness" Value="3,3,3,0"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -359,9 +477,25 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBoxItem">
+                    <!-- The row the list is currently SET to used to differ from its
+                         neighbours by a slightly different dark grey - 1.5:1, which is
+                         nothing to a low-vision eye and nothing at all in a simulation.
+                         It now carries a tick and bold text: which value is chosen is
+                         readable as shape, not as shade. -->
                     <Border x:Name="row" Background="{TemplateBinding Background}"
                             Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
-                        <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="26"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="tick" Grid.Column="0" Text="✓" FontWeight="Bold"
+                                       VerticalAlignment="Center" Visibility="Hidden"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontSize="{TemplateBinding FontSize}"/>
+                            <ContentPresenter x:Name="label" Grid.Column="1"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
@@ -370,6 +504,8 @@
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="row" Property="Background" Value="#FF3A3A48"/>
+                            <Setter TargetName="tick" Property="Visibility" Value="Visible"/>
+                            <Setter Property="FontWeight" Value="Bold"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -516,7 +652,8 @@
                             BorderBrush="#66FFFFFF" BorderThickness="1">
                         <Border.Effect>
                             <DropShadowEffect Color="{DynamicResource PrimaryColor}"
-                                              BlurRadius="12" ShadowDepth="0" Opacity="0.5"/>
+                                              BlurRadius="{DynamicResource GlowBlurSmall}" ShadowDepth="0"
+                                              Opacity="{DynamicResource GlowOpacity}"/>
                         </Border.Effect>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
                                           TextElement.Foreground="{TemplateBinding Foreground}"/>
@@ -534,7 +671,79 @@
                             <Setter TargetName="bd" Property="Background" Value="#FF3A3A44"/>
                             <Setter TargetName="bd" Property="BorderBrush" Value="#FF6A6A78"/>
                             <Setter TargetName="bd" Property="Effect" Value="{x:Null}"/>
-                            <Setter Property="Foreground" Value="#FF9A9AA8"/>
+                            <!-- The dimmed label was 4.05:1 on the dimmed fill, under the
+                                 4.5:1 minimum. Unavailable should look unavailable, not
+                                 unreadable - this is 6.9:1 and still plainly dimmer than
+                                 the bright accent an enabled button carries. -->
+                            <Setter Property="Foreground" Value="#FFC9C9D6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         EXPANDER — the collapsible groups on the Accessibility tab.
+
+         WPF's stock expander draws a small light chevron with system colours,
+         which on this dark UI is a faint triangle nobody can find. This one is a
+         full-width header chip: a large ▸ / ▾ glyph, the group's name in bold,
+         and the app's own focus ring when it is tabbed to. It keeps the standard
+         ToggleButton-bound-to-IsExpanded structure, so NVDA still reports the
+         group as expanded or collapsed and Space still toggles it.
+         ══════════════════════════════════════════════════════════════════ -->
+    <Style TargetType="Expander">
+        <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+        <Setter Property="Margin" Value="0,0,0,10"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Expander">
+                    <Border Background="#22222B" CornerRadius="8"
+                            BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                            BorderThickness="{DynamicResource UiBorderThickness}">
+                        <StackPanel>
+                            <ToggleButton x:Name="head"
+                                          IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          HorizontalContentAlignment="Stretch"
+                                          Padding="{DynamicResource TabPadding}"
+                                          Cursor="Hand">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="chip" Background="Transparent"
+                                                Padding="{TemplateBinding Padding}" CornerRadius="6">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock x:Name="glyph" Text="▸" FontWeight="Bold"
+                                                           FontSize="{DynamicResource GlobalFontSize}"
+                                                           VerticalAlignment="Center" Margin="0,0,10,0"
+                                                           Foreground="{DynamicResource PrimaryBrush}"/>
+                                                <ContentPresenter VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <!-- Open is a different GLYPH as well as a different
+                                                 shade: the state is a shape, never a colour. -->
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="glyph" Property="Text" Value="▾"/>
+                                                <Setter TargetName="chip" Property="Background" Value="#33FFFFFF"/>
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="chip" Property="Background" Value="#22FFFFFF"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                                <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
+                                                  TextElement.FontWeight="Bold"
+                                                  TextElement.FontSize="{DynamicResource GlobalFontSize}"
+                                                  TextElement.Foreground="{DynamicResource ForegroundBrush}"/>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="body" Margin="16,4,16,14" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="body" Property="Visibility" Value="Visible"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -561,7 +770,8 @@
                     <!-- Transparent padding makes the whole row an easy target. -->
                     <Border Background="Transparent" Padding="4,6" SnapsToDevicePixels="True">
                         <StackPanel Orientation="Horizontal">
-                            <Border x:Name="box" Width="28" Height="28" CornerRadius="6"
+                            <Border x:Name="box" Width="{DynamicResource CheckBoxSize}"
+                                    Height="{DynamicResource CheckBoxSize}" CornerRadius="6"
                                     Background="#FF20202A" VerticalAlignment="Center"
                                     BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="2">
                                 <Path x:Name="tick" Stretch="Uniform" Margin="5"
@@ -584,8 +794,11 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
                         </Trigger>
+                        <!-- Focus thickens the box as well as whitening it, so keyboard
+                             focus and "this one is ticked" are told apart by shape. -->
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="box" Property="BorderBrush" Value="#FFFFFFFF"/>
+                            <Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource FocusBrush}"/>
+                            <Setter TargetName="box" Property="BorderThickness" Value="4"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.5"/>
@@ -609,11 +822,11 @@
         <Setter Property="Foreground" Value="#FFF2F2F7"/>
         <Setter Property="Background" Value="#FF241830"/>
         <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="BorderThickness" Value="{DynamicResource UiBorderThickness}"/>
         <Setter Property="FontSize" Value="{StaticResource FontSizeLarge}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Padding" Value="12,9"/>
-        <Setter Property="MinHeight" Value="44"/>
+        <Setter Property="Padding" Value="{DynamicResource FieldPadding}"/>
+        <Setter Property="MinHeight" Value="{DynamicResource ControlMinHeight}"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">
@@ -679,14 +892,20 @@
                         </Popup>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <!-- Both of these used to set the border to PrimaryBrush - which is
+                             what the border already was. Hovering and focusing a dropdown
+                             changed nothing on screen. Focus now thickens the border and
+                             draws it in the hue-free FocusBrush; hover brightens it. -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="fieldBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter TargetName="fieldBorder" Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                            <Setter TargetName="fieldBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter TargetName="fieldBorder" Property="BorderBrush" Value="{DynamicResource FocusBrush}"/>
+                            <Setter TargetName="fieldBorder" Property="BorderThickness" Value="4"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="fieldBorder" Property="Opacity" Value="0.5"/>
+                            <Setter Property="Foreground" Value="#FFC9C9D6"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

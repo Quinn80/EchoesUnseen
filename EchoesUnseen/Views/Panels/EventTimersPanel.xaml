@@ -49,7 +49,8 @@
 
             <StackPanel Orientation="Horizontal" Margin="2,8,0,0">
                 <TextBlock Text="Warn me" Foreground="White" VerticalAlignment="Center"/>
-                <Slider x:Name="LeadSlider" Width="180" Minimum="1" Maximum="15"
+                <Slider x:Name="LeadSlider" Width="180"
+                        AutomationProperties.Name="Warn me this many minutes before an event" Minimum="1" Maximum="15"
                         TickFrequency="1" IsSnapToTickEnabled="True"
                         VerticalAlignment="Center" Margin="8,0,8,0"
                         ValueChanged="Lead_Changed"/>

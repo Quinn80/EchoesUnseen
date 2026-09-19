@@ -559,8 +559,14 @@ public partial class TrailNavigatorPanel : UserControl, IPanel, IBackgroundPanel
     // asking someone to zoom the whole screen to tell two rows apart. Bigger type, far
     // more space between rows so they are distinct targets, and stronger contrast: pure
     // white on near-black, with a vivid plate behind each heading.
-    private static bool Vip => string.Equals(App.Settings.Current.AccessMode, "vip",
-                                             StringComparison.OrdinalIgnoreCase);
+    // Settings > Accessibility calls this "Detailed lists". It is also turned on by
+    // the global size preferences, so asking for a larger interface does not leave
+    // this one list behind - the Accessibility Suite's integration point for the
+    // Trail Navigator (see VISION-ACCESSIBILITY-SUITE.md).
+    private static bool Vip =>
+        string.Equals(App.Settings.Current.AccessMode, "vip", StringComparison.OrdinalIgnoreCase)
+        || Services.AccessibilityService.LargerControls
+        || Services.AccessibilityService.InterfaceScale > 1.01;
 
     private static double GuideRowFont   => Vip ? 22 : 17;
     private static double GuideTopicFont => Vip ? 26 : 18;

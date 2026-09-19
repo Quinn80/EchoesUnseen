@@ -47,10 +47,20 @@ public class Theme
     /// <summary>Muted text (hints, secondary info).</summary>
     public string Muted { get; set; } = "#B8B8C8";
 
-    /// <summary>Semantic colors — usually consistent across themes for accessibility.</summary>
+    /// <summary>
+    /// Semantic colors — the same in every theme, because "this went wrong" must
+    /// not change meaning when someone changes the look of the app.
+    ///
+    /// Error was #EF4444. On a near-black panel that is 5.5:1 to a typical eye but
+    /// only 3.9:1 to a red-blind (protanopia) one, which is under the 4.5:1 minimum
+    /// for body text — red loses most of its brightness when the red cone is the
+    /// one missing. #F87171 is the same red, lifted: 7.5:1 normally and 6.0:1 with
+    /// protanopia. Success and Warning already cleared the bar in all three
+    /// simulations (see tools/Accessibility/a11y_audit.py).
+    /// </summary>
     public string Success { get; set; } = "#4ADE80";
     public string Warning { get; set; } = "#FACC15";
-    public string Error { get; set; } = "#EF4444";
+    public string Error { get; set; } = "#F87171";
 
     /// <summary>Per-theme earcon sound palette (panel open/close, startup, hover).</summary>
     public ThemeSound Sound { get; set; } = new();

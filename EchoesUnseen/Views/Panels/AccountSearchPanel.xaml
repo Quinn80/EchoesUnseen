@@ -21,7 +21,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="SearchBox"
+            <TextBox x:Name="SearchBox" AutomationProperties.Name="Search your account for an item"
                      Grid.Column="0"
                      Style="{StaticResource InputBox}"
                      KeyUp="SearchBox_KeyUp"/>
@@ -34,6 +34,8 @@
                     Margin="8,0,0,0"
                     Style="{StaticResource SecondaryButton}"
                     Content="⟳"
+                    AutomationProperties.Name="Refresh"
+                    AutomationProperties.HelpText="Reload account data from API"
                     Click="Refresh_Click"
                     ToolTip="Reload account data from API"/>
         </Grid>

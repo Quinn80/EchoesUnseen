@@ -67,6 +67,7 @@
                      is fast enough to run this often, and the confirm-twice rule costs a
                      whole scan - so a short interval is what keeps callouts prompt. -->
                 <Slider x:Name="IntervalSlider"
+                        AutomationProperties.Name="Scan interval in seconds"
                         Minimum="1" Maximum="10" Value="1.5"
                         TickFrequency="0.5"
                         ValueChanged="IntervalSlider_ValueChanged"/>
@@ -77,6 +78,7 @@
                 <TextBlock Text="Read N newest messages" FontSize="{DynamicResource GlobalFontSizeSmall}"
                            Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,4"/>
                 <Slider x:Name="CountSlider"
+                        AutomationProperties.Name="How many of the newest messages to read"
                         Minimum="1" Maximum="10" Value="3"
                         TickFrequency="1" IsSnapToTickEnabled="True"
                         ValueChanged="CountSlider_ValueChanged"/>

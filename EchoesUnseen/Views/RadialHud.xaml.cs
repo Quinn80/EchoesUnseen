@@ -153,6 +153,7 @@ public partial class RadialHud : UserControl
         RestoreSavedPosition();
         SetOpacity(IdleOpacity);
         StartSwirlAnimation();
+        Services.AccessibilityService.Changed += OnAccessibilityChanged;
         ApplyMinimiseSetting();
 
         // Recolour the whole wheel whenever the theme changes.
@@ -193,7 +194,11 @@ public partial class RadialHud : UserControl
         // Settings can be saved from any panel; marshal to the UI thread.
         Dispatcher.BeginInvoke(() =>
         {
-            var newScale = Math.Clamp(s.HudScale, 0.75, 1.5);
+            // A HUD scale the user set wins; at 1.0 - meaning "I have not chosen" -
+            // the global Interface Scale applies instead.
+            var newScale = Math.Abs(s.HudScale - 1.0f) < 0.001f
+                ? Math.Clamp(Services.AccessibilityService.InterfaceScale, 0.75, 1.5)
+                : Math.Clamp(s.HudScale, 0.75, 1.5);
             if (Math.Abs(newScale - _hudScale) > 0.001)
                 ApplyHudScale(newScale, reposition: true);
 
@@ -955,6 +960,66 @@ public partial class RadialHud : UserControl
         }
     }
 
+    private void OnAccessibilityChanged(object? sender, Models.AccessibilitySettings a) =>
+        Dispatcher.BeginInvoke(() => ApplyAccessibility());
+
+    /// <summary>
+    /// What the Vision Accessibility Suite governs on the wheel: whether its
+    /// ambient decoration moves, whether the outer glow is drawn, and - only when
+    /// the user has NOT set a HUD scale of their own - how large it is.
+    /// </summary>
+    private void ApplyAccessibility()
+    {
+        try
+        {
+            if (Services.AccessibilityService.AllowAnimation(decorative: true, looping: true))
+                StartSwirlAnimation();
+            else
+                StopSwirlAnimation();
+
+            // Reduce Glow takes the bloom off the ring. The ring itself, its
+            // buttons and its outline stay exactly where they were.
+            GlowPink.Visibility = Services.AccessibilityService.ReduceGlow
+                ? Visibility.Collapsed : Visibility.Visible;
+
+            // Interface Scale grows the wheel only while HUD Scale is still at 1.0,
+            // i.e. while the user has expressed no size of their own. An explicit
+            // per-overlay choice always beats a global preference.
+            var s = App.Settings.Current;
+            if (Math.Abs(s.HudScale - 1.0f) < 0.001f)
+            {
+                var wanted = Math.Clamp(Services.AccessibilityService.InterfaceScale, 0.75, 1.5);
+                if (Math.Abs(wanted - _hudScale) > 0.001) ApplyHudScale(wanted, reposition: true);
+            }
+        }
+        catch (Exception ex) { Services.CrashLogger.Log("RadialHud.ApplyAccessibility", ex); }
+    }
+
+    /// <summary>Stop the ambient loops and leave every part where it belongs, so a
+    /// still wheel looks deliberate rather than frozen mid-sweep.</summary>
+    private void StopSwirlAnimation()
+    {
+        try
+        {
+            static void Still(RotateTransform t)
+            {
+                t.BeginAnimation(RotateTransform.AngleProperty, null);
+                t.Angle = 0;
+            }
+            static void Rest(TranslateTransform t)
+            {
+                t.BeginAnimation(TranslateTransform.YProperty, null);
+                t.Y = 0;
+            }
+
+            Still(SweepARotate); Still(SweepBRotate); Still(ScanArcRotate);
+            Rest(RainPinkShift); Rest(RainBlueShift); Rest(VoidRainShift); Rest(ScanlineShift);
+            GlowPink.BeginAnimation(OpacityProperty, null);
+            GlowPink.Opacity = 0.85;
+        }
+        catch (Exception ex) { Services.CrashLogger.Log("RadialHud.StopSwirlAnimation", ex); }
+    }
+
     /// <summary>
     /// Start every ambient loop: the two counter-rotating outer sweeps, the
     /// medallion scan arc, both matrix-rain streams, the void rain, the
@@ -966,6 +1031,15 @@ public partial class RadialHud : UserControl
     /// </summary>
     private void StartSwirlAnimation()
     {
+        // Every loop below is ambient decoration: it says nothing, it just moves.
+        // Stop Decorative Animation, Reduce Motion and Simplified Interface each
+        // silence the lot, and StopSwirlAnimation puts the wheel back to a still,
+        // perfectly usable version of itself.
+        if (!Services.AccessibilityService.AllowAnimation(decorative: true, looping: true))
+        {
+            StopSwirlAnimation();
+            return;
+        }
         try
         {
             static void Spin(RotateTransform t, double seconds, bool reverse = false) =>

@@ -83,6 +83,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Slider x:Name="SpeedSlider" Grid.Column="0"
+                                AutomationProperties.Name="Speech speed"
                                 Minimum="0.5" Maximum="4.0" Value="1.0"
                                 TickFrequency="0.25" IsSnapToTickEnabled="False"
                                 ValueChanged="SpeedSlider_ValueChanged"/>
@@ -98,6 +99,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Slider x:Name="VolumeSlider" Grid.Column="0"
+                                AutomationProperties.Name="Speech volume"
                                 Minimum="0" Maximum="1.0" Value="1.0"
                                 TickFrequency="0.05"
                                 ValueChanged="VolumeSlider_ValueChanged"/>
@@ -220,7 +222,7 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                 <StackPanel>
                     <TextBlock Text="Theme" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <ComboBox x:Name="ThemeCombo" Margin="0,0,0,4" Padding="8,6"
+                    <ComboBox x:Name="ThemeCombo" AutomationProperties.Name="Theme" Margin="0,0,0,4" Padding="8,6"
                               DisplayMemberPath="Name"
                               SelectionChanged="ThemeCombo_SelectionChanged"/>
                     <TextBlock x:Name="ThemeDescription"
@@ -228,26 +230,14 @@
                                FontSize="{DynamicResource GlobalFontSizeSmall}" TextWrapping="Wrap"
                                Margin="0,0,0,16"/>
 
-                    <TextBlock Text="Access Mode" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <ComboBox x:Name="AccessModeCombo" Margin="0,0,0,16" Padding="8,6"
-                              SelectionChanged="AccessModeCombo_SelectionChanged">
-                        <ComboBoxItem Content="VIP Mode (Full Accessibility)" Tag="vip"/>
-                        <ComboBoxItem Content="Standard Mode" Tag="standard"/>
-                    </ComboBox>
+                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                               FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,12"
+                               Text="Text size, high contrast and how large lists are drawn moved to the Accessibility tab, so each of them lives in exactly one place."/>
 
                     <TextBlock Text="HUD Scale" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <Slider x:Name="HudScaleSlider" Minimum="0.75" Maximum="1.5" Value="1.0"
+                    <Slider x:Name="HudScaleSlider" AutomationProperties.Name="HUD scale" Minimum="0.75" Maximum="1.5" Value="1.0"
                             TickFrequency="0.05" Margin="0,0,0,12"
                             ValueChanged="HudScaleSlider_ValueChanged"/>
-
-                    <TextBlock Text="Font Size" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <Slider x:Name="FontSizeSlider" Minimum="14" Maximum="32" Value="22"
-                            TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,0,12"
-                            ValueChanged="FontSizeSlider_ValueChanged"/>
-
-                    <CheckBox x:Name="HighContrastCheck" Content="High Contrast Mode"
-                              Foreground="White" Margin="0,0,0,8"
-                              Checked="HighContrastCheck_Changed" Unchecked="HighContrastCheck_Changed"/>
 
                     <CheckBox x:Name="EarconsCheck" Content="Audio cues when panels open and close"
                               Foreground="White" Margin="0,0,0,8"
@@ -283,7 +273,30 @@
             </ScrollViewer>
         </TabItem>
 
-        <!-- ═══ ABOUT TAB ══════════════════════════════════════════════════ -->
+        <!-- ═══ KEYBINDS TAB ══════════════════════════════════════════════ -->
+        <TabItem Header="Keybinds">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                <StackPanel>
+                    <TextBlock Text="Keyboard shortcuts" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                               Margin="0,0,0,10"
+                               Text="These work anywhere, even while Guild Wars 2 has focus. Press Change, then press the keys you want. Use Ctrl, Shift or Alt with a letter or function key so it won't clash with the game."/>
+
+                    <!-- Editable shortcuts (rows built in code-behind) -->
+                    <StackPanel x:Name="KeybindsList"/>
+
+                    <Button Content="↺ Reset shortcuts to defaults"
+                            Style="{StaticResource HCButton}" HorizontalAlignment="Left"
+                            Margin="0,10,0,14" Click="ResetKeybinds_Click"
+                            AutomationProperties.Name="Reset all shortcuts to their defaults"/>
+
+                    <TextBlock Text="Fixed shortcuts" FontWeight="SemiBold" Margin="0,6,0,4"/>
+                    <StackPanel x:Name="FixedKeybindsList"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- ═══ FEATURES TAB ══════════════════════════════════════════════════ -->
         <TabItem Header="Features">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                 <StackPanel>
@@ -381,37 +394,302 @@
             </ScrollViewer>
         </TabItem>
 
-        <!-- ═══ KEYBINDS TAB ══════════════════════════════════════════════ -->
-        <TabItem Header="Keybinds">
+        <!-- ═══ ACCESSIBILITY TAB ═════════════════════════════════════════
+             How Echoes Unseen adapts to what you can see. Organised by what
+             somebody needs - larger, higher contrast, less motion, stronger
+             focus, where on the screen - never by a diagnosis. A profile at the
+             top is a starting point and nothing more: change any single setting
+             afterwards and the profile simply becomes Custom.
+             Feature switches stay in Features; overlay placement stays in HUD.
+             ══════════════════════════════════════════════════════════════ -->
+        <TabItem Header="Accessibility">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                 <StackPanel>
-                    <TextBlock Text="Keyboard shortcuts" FontWeight="SemiBold" Margin="0,0,0,4"/>
+
+                    <!-- ── Quick setup ──────────────────────────────────── -->
+                    <TextBlock Text="Quick setup" FontWeight="SemiBold" Margin="0,0,0,4"/>
                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
-                               Margin="0,0,0,10"
-                               Text="These work anywhere, even while Guild Wars 2 has focus. Press Change, then press the keys you want. Use Ctrl, Shift or Alt with a letter or function key so it won't clash with the game."/>
+                               FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,8"
+                               Text="Choose a starting point if one sounds like you, then change anything you like. You do not have to choose one at all, and nothing here is locked."/>
+                    <ComboBox x:Name="A11yProfileCombo" Margin="0,0,0,4" Padding="8,6"
+                              AutomationProperties.Name="Accessibility profile"
+                              AutomationProperties.HelpText="A starting point. Changing any setting afterwards moves this to Custom and keeps your change."
+                              DisplayMemberPath="Name"
+                              SelectionChanged="A11yProfile_Changed"/>
+                    <TextBlock x:Name="A11yProfileDescription" TextWrapping="Wrap"
+                               Foreground="{DynamicResource MutedBrush}"
+                               FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,10"/>
+                    <Button Style="{StaticResource SecondaryButton}" Content="↺ Reset accessibility settings"
+                            HorizontalAlignment="Left" Margin="0,0,0,14"
+                            Click="A11yResetAll_Click"
+                            AutomationProperties.Name="Reset accessibility settings"
+                            AutomationProperties.HelpText="Puts only this tab back to its defaults. Your voice, HUD placement, keybinds and feature switches are not touched."/>
 
-                    <!-- Editable shortcuts (rows built in code-behind) -->
-                    <StackPanel x:Name="KeybindsList"/>
+                    <!-- ── Readability and size ─────────────────────────── -->
+                    <Expander x:Name="A11yReadabilityGroup" IsExpanded="True"
+                              Header="Readability and size"
+                              AutomationProperties.Name="Readability and size">
+                        <StackPanel>
+                            <TextBlock Text="Interface scale" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock Text="How large the panels, buttons and spacing are drawn."
+                                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="A11yScaleCombo" Margin="0,0,0,8" Padding="8,6"
+                                      AutomationProperties.Name="Interface scale"
+                                      SelectionChanged="A11yScale_Changed"/>
+                            <StackPanel x:Name="A11yCustomScaleRow" Visibility="Collapsed" Margin="0,0,0,8">
+                                <TextBlock x:Name="A11yCustomScaleLabel" Text="Custom scale: 100%"
+                                           FontSize="{DynamicResource GlobalFontSizeSmall}"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                                <Slider x:Name="A11yCustomScaleSlider" Minimum="0.85" Maximum="1.6"
+                                        TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                        AutomationProperties.Name="Custom interface scale"
+                                        AutomationProperties.HelpText="Between 85 and 160 per cent. Larger than this and the panels stop fitting the screen."
+                                        ValueChanged="A11yCustomScale_Changed"/>
+                            </StackPanel>
 
-                    <Button Content="↺ Reset shortcuts to defaults"
-                            Style="{StaticResource HCButton}" HorizontalAlignment="Left"
-                            Margin="0,10,0,14" Click="ResetKeybinds_Click"
-                            AutomationProperties.Name="Reset all shortcuts to their defaults"/>
+                            <TextBlock Text="Text size" FontWeight="SemiBold" Margin="0,4,0,2"/>
+                            <TextBlock Text="The size of the words in every panel."
+                                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="A11yTextSizeCombo" Margin="0,0,0,8" Padding="8,6"
+                                      AutomationProperties.Name="Text size"
+                                      SelectionChanged="A11yTextSize_Changed"/>
+                            <StackPanel x:Name="A11yCustomTextRow" Margin="0,0,0,8">
+                                <TextBlock x:Name="FontSizeLabel" Text="Exact size: 22 point"
+                                           FontSize="{DynamicResource GlobalFontSizeSmall}"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                                <Slider x:Name="FontSizeSlider" AutomationProperties.Name="Exact text size"
+                                        Minimum="14" Maximum="32" Value="22"
+                                        TickFrequency="1" IsSnapToTickEnabled="True"
+                                        ValueChanged="FontSizeSlider_ValueChanged"/>
+                            </StackPanel>
 
-                    <TextBlock Text="Fixed shortcuts" FontWeight="SemiBold" Margin="0,6,0,4"/>
-                    <StackPanel x:Name="FixedKeybindsList"/>
+                            <CheckBox x:Name="A11yBoldText" Content="Bold text"
+                                      AutomationProperties.HelpText="Uses a heavier weight for ordinary text. Headings and values already have their own weight and are left alone."
+                                      Checked="A11yBoldText_Changed" Unchecked="A11yBoldText_Changed"/>
+                            <CheckBox x:Name="A11yLargerControls" Content="Larger controls"
+                                      AutomationProperties.HelpText="Bigger buttons, switches, tabs and icon buttons - easier to see and easier to hit."
+                                      Checked="A11yLargerControls_Changed" Unchecked="A11yLargerControls_Changed"/>
+                            <CheckBox x:Name="A11yStrongerBorders" Content="Stronger borders"
+                                      AutomationProperties.HelpText="Thicker, brighter edges around panels, fields and buttons, so where one thing ends and the next begins is obvious."
+                                      Checked="A11yStrongerBorders_Changed" Unchecked="A11yStrongerBorders_Changed"/>
+
+                            <TextBlock Text="Tooltip size" FontWeight="SemiBold" Margin="0,10,0,2"/>
+                            <TextBlock Text="How large the small explanations are when they pop up."
+                                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="A11yTooltipCombo" Margin="0,0,0,10" Padding="8,6"
+                                      AutomationProperties.Name="Tooltip size"
+                                      SelectionChanged="A11yTooltip_Changed"/>
+
+                            <TextBlock Text="Detailed lists" FontWeight="SemiBold" Margin="0,4,0,2"/>
+                            <TextBlock Text="How the longer lists are drawn — the Trail Navigator's guides, for one. Large rows are further apart and higher contrast, which makes them easier to tell apart and easier to click."
+                                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="AccessModeCombo" Margin="0,0,0,10" Padding="8,6"
+                                      AutomationProperties.Name="Detailed lists"
+                                      SelectionChanged="AccessModeCombo_SelectionChanged">
+                                <ComboBoxItem Content="Large, high-contrast rows" Tag="vip"/>
+                                <ComboBoxItem Content="Compact rows" Tag="standard"/>
+                            </ComboBox>
+
+                            <Button Style="{StaticResource SecondaryButton}" Content="↺ Reset this section"
+                                    HorizontalAlignment="Left" Tag="readability" Click="A11yResetSection_Click"
+                                    AutomationProperties.Name="Reset readability and size"/>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- ── Colour and contrast ──────────────────────────── -->
+                    <Expander x:Name="A11yColourGroup" IsExpanded="True"
+                              Header="Colour and contrast"
+                              AutomationProperties.Name="Colour and contrast">
+                        <StackPanel>
+                            <TextBlock Text="Colour vision" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock Text="Picks colours inside Echoes Unseen that stay easy to tell apart. It does not put a filter over the game."
+                                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="A11yColourVisionCombo" Margin="0,0,0,8" Padding="8,6"
+                                      AutomationProperties.Name="Colour vision"
+                                      SelectionChanged="A11yColourVision_Changed"/>
+
+                            <CheckBox x:Name="HighContrastCheck" Content="High contrast"
+                                      AutomationProperties.HelpText="White text on black, white borders, no glow. The strongest setting for reading the interface."
+                                      Checked="HighContrastCheck_Changed" Unchecked="HighContrastCheck_Changed"/>
+                            <CheckBox x:Name="A11yReduceTransparency" Content="Reduce transparency"
+                                      AutomationProperties.HelpText="Makes panels, tooltips and overlays solid instead of see-through, so the game behind them cannot interfere."
+                                      Checked="A11yReduceTransparency_Changed" Unchecked="A11yReduceTransparency_Changed"/>
+                            <CheckBox x:Name="A11ySolidTextBackgrounds" Content="Solid backgrounds behind text"
+                                      AutomationProperties.HelpText="Puts a solid plate behind text drawn over the game, so it stays readable over snow, sky, spell effects and dark ground."
+                                      Checked="A11ySolidText_Changed" Unchecked="A11ySolidText_Changed"/>
+
+                            <TextBlock Text="Accent colour" FontWeight="SemiBold" Margin="0,10,0,2"/>
+                            <TextBlock Text="The colour used for buttons, borders and highlights. Choose one you can see comfortably."
+                                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="A11yAccentCombo" Margin="0,0,0,10" Padding="8,6"
+                                      AutomationProperties.Name="Accent colour"
+                                      DisplayMemberPath="Name"
+                                      SelectionChanged="A11yAccent_Changed"/>
+
+                            <Button Style="{StaticResource SecondaryButton}" Content="↺ Reset this section"
+                                    HorizontalAlignment="Left" Tag="color" Click="A11yResetSection_Click"
+                                    AutomationProperties.Name="Reset colour and contrast"/>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- ── Motion and eye comfort ───────────────────────── -->
+                    <Expander x:Name="A11yMotionGroup" Header="Motion and eye comfort"
+                              AutomationProperties.Name="Motion and eye comfort">
+                        <StackPanel>
+                            <CheckBox x:Name="A11yReduceMotion" Content="Reduce motion"
+                                      AutomationProperties.HelpText="Things appear instead of sliding, rising or growing into place."
+                                      Checked="A11yMotion_Changed" Unchecked="A11yMotion_Changed"/>
+                            <CheckBox x:Name="A11yDisablePulsing" Content="Stop pulsing indicators"
+                                      AutomationProperties.HelpText="Stops indicators that breathe or pulse on a loop."
+                                      Checked="A11yMotion_Changed" Unchecked="A11yMotion_Changed"/>
+                            <CheckBox x:Name="A11yReduceGlow" Content="Reduce glow"
+                                      AutomationProperties.HelpText="Takes the neon bloom off buttons, panels and the wheel. The edges stay, so nothing becomes harder to find."
+                                      Checked="A11yMotion_Changed" Unchecked="A11yMotion_Changed"/>
+                            <CheckBox x:Name="A11yReduceDecorative" Content="Stop decorative animation"
+                                      AutomationProperties.HelpText="Stops movement that carries no information, such as drifting particles and spinning frames. A theme keeps its colours; it stops moving."
+                                      Checked="A11yMotion_Changed" Unchecked="A11yMotion_Changed"/>
+                            <CheckBox x:Name="A11yReduceFlashing" Content="Reduce flashing"
+                                      AutomationProperties.HelpText="Suppresses quick flashes and flickers in Echoes Unseen's own interface."
+                                      Checked="A11yMotion_Changed" Unchecked="A11yMotion_Changed"/>
+                            <CheckBox x:Name="A11yDimBright" Content="Dim bright effects"
+                                      AutomationProperties.HelpText="Tones down the brightest highlights. It never darkens Guild Wars 2 itself."
+                                      Checked="A11yMotion_Changed" Unchecked="A11yMotion_Changed"/>
+
+                            <Button Style="{StaticResource SecondaryButton}" Content="↺ Reset this section"
+                                    HorizontalAlignment="Left" Margin="0,10,0,0" Tag="motion"
+                                    Click="A11yResetSection_Click"
+                                    AutomationProperties.Name="Reset motion and eye comfort"/>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- ── Focus and visibility ─────────────────────────── -->
+                    <Expander x:Name="A11yFocusGroup" Header="Focus and visibility"
+                              AutomationProperties.Name="Focus and visibility">
+                        <StackPanel>
+                            <TextBlock Text="Focus indicator" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock Text="The outline that shows where you are when moving with the keyboard. It is always white inside black, never a colour."
+                                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="A11yFocusCombo" Margin="0,0,0,8" Padding="8,6"
+                                      AutomationProperties.Name="Focus indicator strength"
+                                      SelectionChanged="A11yFocus_Changed"/>
+
+                            <CheckBox x:Name="A11yHighlightSelected" Content="Mark selected items more strongly"
+                                      AutomationProperties.HelpText="Adds a heavier bar and bolder text to whatever is selected. Selected things always carry a mark as well as a colour; this makes it larger."
+                                      Checked="A11yFocusCheck_Changed" Unchecked="A11yFocusCheck_Changed"/>
+                            <CheckBox x:Name="A11ySimplified" Content="Simplified interface"
+                                      AutomationProperties.HelpText="Fewer decorative flourishes and plainer grouping. Nothing is hidden - every control stays where it was."
+                                      Checked="A11yFocusCheck_Changed" Unchecked="A11yFocusCheck_Changed"/>
+                            <CheckBox x:Name="A11yHideDecorative" Content="Hide decorative effects"
+                                      AutomationProperties.HelpText="Turns off ornamental effects while the theme keeps its own look and colours."
+                                      Checked="A11yFocusCheck_Changed" Unchecked="A11yFocusCheck_Changed"/>
+
+                            <Button Style="{StaticResource SecondaryButton}" Content="↺ Reset this section"
+                                    HorizontalAlignment="Left" Margin="0,10,0,0" Tag="focus"
+                                    Click="A11yResetSection_Click"
+                                    AutomationProperties.Name="Reset focus and visibility"/>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- ── Preferred viewing area ───────────────────────── -->
+                    <Expander x:Name="A11yAreaGroup" Header="Preferred viewing area"
+                              AutomationProperties.Name="Preferred viewing area">
+                        <StackPanel>
+                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,6"
+                                       Text="Choose the part of the screen where accessibility messages are easiest for you to see. New messages start there. This is not the same as placing a panel: anything you have positioned by hand stays exactly where you put it."/>
+                            <ComboBox x:Name="A11yAreaCombo" Margin="0,0,0,8" Padding="8,6"
+                                      AutomationProperties.Name="Preferred viewing area"
+                                      SelectionChanged="A11yArea_Changed"/>
+                            <TextBlock x:Name="A11yAreaNote" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,10"/>
+
+                            <Button Style="{StaticResource SecondaryButton}" Content="↺ Reset this section"
+                                    HorizontalAlignment="Left" Tag="area" Click="A11yResetSection_Click"
+                                    AutomationProperties.Name="Reset preferred viewing area"/>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- ── Advanced ─────────────────────────────────────── -->
+                    <Expander x:Name="A11yAdvancedGroup" Header="Advanced accessibility settings"
+                              AutomationProperties.Name="Advanced accessibility settings">
+                        <StackPanel>
+                            <TextBlock Text="Custom accent colour" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock Text="A colour of your own, as six characters after a hash - for example #FFC94A. Used when Accent colour is set to Custom."
+                                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,4"/>
+                            <TextBox x:Name="A11yCustomAccentBox" Style="{StaticResource InputBox}"
+                                     Margin="0,0,0,4" MaxLength="9"
+                                     AutomationProperties.Name="Custom accent colour"
+                                     LostFocus="A11yCustomAccent_Changed" KeyDown="A11yCustomAccent_Key"/>
+                            <TextBlock x:Name="A11yAccentCheckLabel" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,12"/>
+
+                            <TextBlock Text="Custom viewing area" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBlock Text="Used when Preferred viewing area is set to Custom. Each number is a fraction of the screen from 0 to 1, so it keeps working if you change monitor or resolution: left 0.25, top 0.25, width 0.5, height 0.5 is the middle half."
+                                       TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,6"/>
+                            <UniformGrid Columns="4" Margin="0,0,0,4">
+                                <StackPanel Margin="0,0,6,0">
+                                    <TextBlock Text="Left" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                                               Foreground="{DynamicResource MutedBrush}"/>
+                                    <TextBox x:Name="A11yAreaX" Style="{StaticResource InputBox}"
+                                             AutomationProperties.Name="Custom viewing area, left edge"
+                                             LostFocus="A11yArea_Numbers" KeyDown="A11yArea_NumbersKey"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,6,0">
+                                    <TextBlock Text="Top" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                                               Foreground="{DynamicResource MutedBrush}"/>
+                                    <TextBox x:Name="A11yAreaY" Style="{StaticResource InputBox}"
+                                             AutomationProperties.Name="Custom viewing area, top edge"
+                                             LostFocus="A11yArea_Numbers" KeyDown="A11yArea_NumbersKey"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,6,0">
+                                    <TextBlock Text="Width" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                                               Foreground="{DynamicResource MutedBrush}"/>
+                                    <TextBox x:Name="A11yAreaW" Style="{StaticResource InputBox}"
+                                             AutomationProperties.Name="Custom viewing area, width"
+                                             LostFocus="A11yArea_Numbers" KeyDown="A11yArea_NumbersKey"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="Height" FontSize="{DynamicResource GlobalFontSizeSmall}"
+                                               Foreground="{DynamicResource MutedBrush}"/>
+                                    <TextBox x:Name="A11yAreaH" Style="{StaticResource InputBox}"
+                                             AutomationProperties.Name="Custom viewing area, height"
+                                             LostFocus="A11yArea_Numbers" KeyDown="A11yArea_NumbersKey"/>
+                                </StackPanel>
+                            </UniformGrid>
+                            <TextBlock x:Name="A11yAreaSummary" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}" Margin="0,0,0,12"/>
+
+                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                                       FontSize="{DynamicResource GlobalFontSizeSmall}"
+                                       Text="One rule cannot be switched off anywhere in Echoes Unseen: colour is never the only thing that tells you something. Every selected, checked, focused, unavailable or failed state also carries a mark, a word or a shape, and a screen reader is always told the same thing the screen shows."/>
+                        </StackPanel>
+                    </Expander>
+
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
 
+        <!-- ═══ ABOUT TAB ═════════════════════════════════════════════════════ -->
         <TabItem Header="About">
             <StackPanel Margin="8">
                 <TextBlock Text="Echoes Unseen" FontSize="24" FontWeight="Bold"
                            Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,4"/>
                 <TextBlock Text="Accessibility Overlay for Guild Wars 2"
                            Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,16"/>
-                <TextBlock Text="b1.5" Margin="0,0,0,16"
-                           AutomationProperties.Name="Version: b1.5"/>
+                <TextBlock Text="1.6B" Margin="0,0,0,16"
+                           AutomationProperties.Name="Version: 1.6 B"/>
 
                 <!-- WHAT RUNS ON THIS MACHINE.
                      Worth saying out loud on the page people actually read, because
@@ -451,6 +729,16 @@
                     </StackPanel>
                 </Border>
 
+                <!-- The support address, written out rather than hidden behind the
+                     feedback button: somebody may want to write from their phone, or
+                     from a machine where Echoes Unseen will not start at all. -->
+                <TextBlock Text="Support" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBlock TextWrapping="Wrap" Foreground="White" Margin="0,0,0,4"
+                           AutomationProperties.Name="Support email: Echoes dot Unseen at p m dot m e"
+                           Text="Echoes.Unseen@pm.me"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,16"
+                           Text="Write any time — a problem, an idea, or something that reads wrongly. If you can, record a bug report first (F9) and attach the zip from your Downloads folder: it says exactly what was on screen."/>
+
                 <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,16"
                            Text="Echoes Unseen is an unofficial accessibility companion for Guild Wars 2. It is not affiliated with, endorsed by, sponsored by or approved by ArenaNet or NCSOFT. Guild Wars 2 and its assets are © ArenaNet, LLC."/>
 
@@ -480,23 +768,42 @@
                 </TextBlock>
             </StackPanel>
         </TabItem>
-        <!-- ═══ FEATURES TAB ══════════════════════════════════════════════ -->
+
 </TabControl>
 
-        <!-- Save / Reset footer, visible on every tab -->
+        <!-- Save / Reset / Exit footer, visible on every tab -->
         <Border Grid.Row="1" Padding="12,10"
                 Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="0,1,0,0">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <TextBlock x:Name="SaveStatus" VerticalAlignment="Center" Margin="0,0,14,0"
-                           Foreground="{DynamicResource MutedBrush}"/>
-                <Button Content="↺ Reset to defaults" Style="{StaticResource HCButton}"
-                        Margin="0,0,8,0" Click="ResetSettings_Click"
-                        AutomationProperties.Name="Reset all settings to defaults"/>
-                <Button Content="💾 Save" Style="{StaticResource HCButton}"
-                        Click="SaveSettings_Click"
-                        AutomationProperties.Name="Save settings"/>
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- The overlay has no title bar and no taskbar button, so Alt+F4
+                     goes to the game behind it: until now the ONLY way out was the
+                     Ctrl+Shift+Q hotkey, which a sighted user has no way to guess.
+                     A plainly labelled way out, on every Settings tab, that asks
+                     before it closes. -->
+                <Button Grid.Column="0" Content="⏻ Exit Echoes Unseen"
+                        Style="{StaticResource SecondaryButton}"
+                        Click="ExitApp_Click"
+                        AutomationProperties.Name="Exit Echoes Unseen"
+                        AutomationProperties.HelpText="Closes the whole application. Asks you to confirm first. The keyboard shortcut is Control Shift Q."
+                        ToolTip="Close Echoes Unseen completely (Ctrl+Shift+Q)"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock x:Name="SaveStatus" VerticalAlignment="Center" Margin="0,0,14,0"
+                               Foreground="{DynamicResource MutedBrush}"/>
+                    <Button Content="↺ Reset to defaults" Style="{StaticResource HCButton}"
+                            Margin="0,0,8,0" Click="ResetSettings_Click"
+                            AutomationProperties.Name="Reset all settings to defaults"/>
+                    <Button Content="💾 Save" Style="{StaticResource HCButton}"
+                            Click="SaveSettings_Click"
+                            AutomationProperties.Name="Save settings"/>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

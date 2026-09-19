@@ -75,7 +75,7 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="Tempo: " Foreground="{DynamicResource MutedBrush}" FontSize="{DynamicResource GlobalFontSizeSmall}"
                                VerticalAlignment="Center"/>
-                    <Slider x:Name="TempoSlider" Minimum="0.25" Maximum="2.0" Value="1.0"
+                    <Slider x:Name="TempoSlider" AutomationProperties.Name="Tempo" Minimum="0.25" Maximum="2.0" Value="1.0"
                             Width="100" VerticalAlignment="Center" Margin="4,0"
                             TickFrequency="0.05"
                             ValueChanged="TempoSlider_ValueChanged"/>
@@ -146,7 +146,9 @@
                         <Grid.ColumnDefinitions><ColumnDefinition Width="80"/><ColumnDefinition Width="*"/><ColumnDefinition Width="52"/></Grid.ColumnDefinitions>
                         <TextBlock Text="Speed" Foreground="White" VerticalAlignment="Center"
                                    ToolTip="How fast notes fall (timed mode). Higher = slower/easier."/>
-                        <Slider x:Name="GuideSpeedSlider" Grid.Column="1" Minimum="700" Maximum="4000"
+                        <Slider x:Name="GuideSpeedSlider" Grid.Column="1"
+                                AutomationProperties.Name="Guide note speed"
+                                AutomationProperties.HelpText="How fast notes fall in timed mode. Higher is slower and easier." Minimum="700" Maximum="4000"
                                 Margin="8,0" VerticalAlignment="Center" ValueChanged="GuideSpeed_Changed"/>
                         <TextBlock x:Name="GuideSpeedLabel" Grid.Column="2" Text="2.0s" Foreground="White"
                                    TextAlignment="Right" VerticalAlignment="Center"/>
@@ -160,7 +162,8 @@
                     <Grid Margin="0,0,0,8">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="80"/><ColumnDefinition Width="*"/><ColumnDefinition Width="52"/></Grid.ColumnDefinitions>
                         <TextBlock Text="Size" Foreground="White" VerticalAlignment="Center"/>
-                        <Slider x:Name="GuideSizeSlider" Grid.Column="1" Minimum="0.6" Maximum="1.8"
+                        <Slider x:Name="GuideSizeSlider" Grid.Column="1"
+                                AutomationProperties.Name="Guide note size" Minimum="0.6" Maximum="1.8"
                                 Margin="8,0" VerticalAlignment="Center" ValueChanged="GuideSize_Changed"/>
                         <TextBlock x:Name="GuideSizeLabel" Grid.Column="2" Text="100%" Foreground="White"
                                    TextAlignment="Right" VerticalAlignment="Center"/>

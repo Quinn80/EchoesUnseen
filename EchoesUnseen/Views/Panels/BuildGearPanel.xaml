@@ -21,7 +21,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <ComboBox x:Name="CharacterCombo"
+            <ComboBox x:Name="CharacterCombo" AutomationProperties.Name="Character"
                       Grid.Column="0"
                       Padding="8,8"
                       SelectionChanged="CharacterCombo_SelectionChanged"
@@ -38,6 +38,8 @@
                     Margin="8,0,0,0"
                     Style="{StaticResource SecondaryButton}"
                     Content="⟳"
+                    AutomationProperties.Name="Refresh"
+                    AutomationProperties.HelpText="Refresh from API"
                     Click="Refresh_Click"
                     ToolTip="Refresh from API"/>
         </Grid>

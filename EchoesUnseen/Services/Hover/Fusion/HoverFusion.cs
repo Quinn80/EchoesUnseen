@@ -416,6 +416,18 @@ public sealed class HoverFusion
                 if (d < bestD) { bestD = d; best = key; }
             }
         }
+
+        // The Account Vault and the Inventory are open together, and the Inventory's
+        // heading is often the nearer one - so the bank read as "inventory" and the
+        // vault's own shape was never considered. The vault is the more specific
+        // window: when its heading or its tab strip is on screen, this is the bank.
+        // Everything a bank slot does is what an inventory slot does; what changes is
+        // that the tab strip is then known to be chrome (see BankTabStrip).
+        if (best is "inventory" or "none"
+            && lines.Any(l => l.Text.Contains("Account Vault", StringComparison.OrdinalIgnoreCase)
+                              || BankTabName.IsMatch(l.Text)))
+            best = "bank";
+
         return best;
     }
 
@@ -1047,6 +1059,52 @@ public sealed class HoverFusion
         return false;
     }
 
+    /// <summary>A tab down the side of the Account Vault: "Bank Tab 1" ... "Bank Tab 8".</summary>
+    private static readonly Regex BankTabName =
+        new(@"^\W*Bank\s*Tab\s*\d{1,2}\W*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>
+    /// Is this list the Account Vault's tab strip - every name a bank tab and nothing else?
+    /// </summary>
+    public static bool BankTabStrip(IReadOnlyList<TextLine> names) =>
+        names.Count > 0 && names.All(n => BankTabName.IsMatch(n.Text));
+
+    /// <summary>
+    /// Is the pointer actually ON one of these names, rather than merely level with it?
+    /// Half a line of slack in each direction, because a tab's clickable chip is a little
+    /// larger than the word drawn inside it.
+    /// </summary>
+    public static bool PointerOnName(IReadOnlyList<TextLine> names, double x, double y, double h) =>
+        names.Any(n => x >= n.Box.X - h * 0.8 && x <= n.Box.Right + h * 0.8
+                       && y >= n.Box.Y - h * 0.6 && y <= n.Box.Bottom + h * 0.6);
+
+    /// <summary>
+    /// THE ACCOUNT VAULT RULE. Does the bank's tab strip win this hover?
+    ///
+    /// Only on two conditions, and it needs both:
+    ///
+    ///   1. the pointer is genuinely ON a tab, not merely level with one. A list row's
+    ///      band runs the width of the panel, so a pointer on an item slot hundreds of
+    ///      pixels away was inside "Bank Tab 2"'s row and the tab won;
+    ///   2. no OTHER object's tooltip is anchored at the pointer. In Quinn's session the
+    ///      item's own tooltip had already been found and read - "13 Experience Boosters",
+    ///      "16 Black Lion Statuettes", "250 Empyreal Fragments" - and was then discarded,
+    ///      quite correctly, because it is not about a bank tab. A tooltip sitting at the
+    ///      pointer is the game telling us what the pointer is on, and it outranks a row
+    ///      the pointer merely shares a line with.
+    ///
+    /// Six of eight bank hovers in that session failed this way. Both conditions are
+    /// scoped to the vault's own tab strip, so nothing about inventory, merchants, the
+    /// Trading Post or any other list changes.
+    /// </summary>
+    public static bool BankTabWins(IReadOnlyList<TextLine> names, double x, double y, double h,
+                                   string? tooltipTitle, bool tooltipAtPointer)
+    {
+        if (!PointerOnName(names, x, y, h)) return false;
+        if (tooltipAtPointer && tooltipTitle != null && !BankTabName.IsMatch(tooltipTitle)) return false;
+        return true;
+    }
+
     private bool TryList(Mat picture, UiGeometry geo, List<TextLine> window, double x, double y, double h,
                          string context, Tooltip? tip, AccessibleTarget t)
     {
@@ -1063,6 +1121,15 @@ public sealed class HoverFusion
         {
             t.Reasons.Add($"list? {list.Names.Count} names from '{list.Names[0].Text}' pitch {list.Pitch / h:F1}h left {list.Left:F0} top {list.Top:F0} bottom {list.Bottom:F0}");
             if (y < list.Top || y > list.Bottom) continue;
+
+            // The Account Vault's tab strip: chrome, not content. See BankTabWins.
+            if (BankTabStrip(list.Names)
+                && !BankTabWins(list.Names, x, y, h, tip?.Title, tip is { AtPointer: true }))
+            {
+                t.Reasons.Add("bank tab strip, but the pointer is not on a tab (or the slot's own "
+                              + "tooltip is at the pointer) - the slot wins");
+                continue;
+            }
             var left = list.Left - h * 3.4;
             // (only a list beside the pointer's own row: a tooltip beside the list - an equipped item's
             // comparison panel - that ends above the row is not the next list, and the row's price
@@ -1570,7 +1637,9 @@ public sealed class HoverFusion
             return false;
         }
         var (bare, count) = TextLines.SplitCount(title);
-        t.Type = context == "inventory" || count != null ? TargetType.InventorySlot : TargetType.IconTooltip;
+        // A bank slot is an inventory slot: same one-object contract, same stack count.
+        t.Type = context is "inventory" or "bank" || count != null
+            ? TargetType.InventorySlot : TargetType.IconTooltip;
         t.Name = bare;
         t.StackCount = count;
         t.TargetBounds = default;

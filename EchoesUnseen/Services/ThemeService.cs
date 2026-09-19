@@ -181,6 +181,11 @@ public static class ThemeService
         Apply(GetById(s.ThemeId));
         ApplyFontSize(s.FontSize);
         ApplyHighContrast(s.HighContrast);
+        // LAST, deliberately: the Vision Accessibility Suite overrides the theme,
+        // the font size and High Contrast, because what somebody needs in order to
+        // see the interface outranks how the interface prefers to look. See
+        // AccessibilityService for the precedence rule in full.
+        AccessibilityService.Apply(s);
     }
 
     /// <summary>Set the global body text size (and the small hint size that
@@ -219,7 +224,7 @@ public static class ThemeService
             SetBrush(res, "BackgroundBrush", "#000000");
             SetBrush(res, "SurfaceBrush", "#000000");
             SetBrush(res, "SurfaceBorderBrush", "#FFFFFF");
-            SetBrush(res, "FocusBrush", "#FFFFFF");
+            SetBrush(res, "FocusBrush", "#FFFFFF");   // same ring as every other mode
 
             // Panel chrome: solid black card, solid white frame, white title.
             res["PanelFiligreeBrush"] = Frozen(new SolidColorBrush(ParseColor("#FFFFFF")));
@@ -229,8 +234,8 @@ public static class ThemeService
         else
         {
             // Standard keys were already restored by Apply(theme); put the
-            // ornate panel chrome and themed focus color back.
-            SetBrush(res, "FocusBrush", _currentTheme.Primary);
+            // ornate panel chrome back. The focus ring stays WHITE - see Apply().
+            SetBrush(res, "FocusBrush", "#FFFFFF");
 
             var filigree = new LinearGradientBrush
             {
@@ -359,7 +364,13 @@ public static class ThemeService
             title.GradientStops.Add(new GradientStop(ParseColor(theme.Secondary), 1.0));
             res["PanelTitleBrush"] = Frozen(title);
 
-            SetBrush(res, "FocusBrush", theme.Primary);
+            // NOT theme.Primary. The focus ring used to be the theme accent, which
+            // meant that on an accent-filled button - every primary button in the
+            // app - the ring and the button were the same colour: 1:1 contrast,
+            // invisible, in every theme. It is white inside a black halo now, a
+            // brightness edge with no hue at all, so keyboard focus is equally
+            // visible in Solar Gold, Abyss Blue and to any kind of colour vision.
+            SetBrush(res, "FocusBrush", "#FFFFFF");
         }
 
         ThemeChanged?.Invoke(null, theme);

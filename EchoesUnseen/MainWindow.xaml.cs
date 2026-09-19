@@ -613,8 +613,12 @@ public partial class MainWindow : Window
     /// Quit. A transparent, no-activate, not-in-taskbar overlay can't be closed
     /// with Alt+F4 (that goes to the game underneath), so this hotkey is the
     /// reliable exit. Speaks a short goodbye first so a blind user hears it go.
+    ///
+    /// Also reachable by eye: Settings has an "Exit Echoes Unseen" button in its
+    /// footer, because a keyboard shortcut is not a visible way out and a sighted
+    /// user had no obvious one at all (Lady Elyssa's feedback).
     /// </summary>
-    private void QuitApp()
+    internal void QuitApp()
     {
         // Fire the goodbye, but NEVER let speech block the quit. A short timer
         // force-closes the app no matter what — so Ctrl+Shift+Q always works.

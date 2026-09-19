@@ -17,6 +17,14 @@ public class AppSettings
     public string AccessMode { get; set; } = "vip"; // "vip" | "standard"
     public float HudScale { get; set; } = 1.0f;
 
+    /// <summary>
+    /// The Accessibility tab: global visual preferences every feature respects.
+    /// Its defaults reproduce b1.5 exactly, so an older settings file that has
+    /// never seen this block comes back unchanged. See
+    /// <see cref="AccessibilitySettings"/> and VISION-ACCESSIBILITY-SUITE.md.
+    /// </summary>
+    public AccessibilitySettings Accessibility { get; set; } = new();
+
     /// <summary>Theme ID — one of the entries in ThemeService.BuiltInThemes.</summary>
     public string ThemeId { get; set; } = "hot-pink";
 

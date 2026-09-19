@@ -56,11 +56,11 @@
                     <TextBlock x:Name="VistaCount" Text="—" Foreground="#4ADE80" FontWeight="Bold"/>
                 </StackPanel>
             </Border>
-            <Border Background="#22222B" BorderBrush="#C084FC" BorderThickness="1"
+            <Border Background="#22222B" BorderBrush="#D8B4FE" BorderThickness="1"
                     CornerRadius="6" Padding="8,6" Margin="3,0,3,0">
                 <StackPanel>
                     <TextBlock Text="Hero" FontSize="{DynamicResource GlobalFontSizeSmall}" Foreground="{DynamicResource MutedBrush}"/>
-                    <TextBlock x:Name="HeroCount" Text="—" Foreground="#C084FC" FontWeight="Bold"/>
+                    <TextBlock x:Name="HeroCount" Text="—" Foreground="#D8B4FE" FontWeight="Bold"/>
                 </StackPanel>
             </Border>
             <Border Background="#22222B" BorderBrush="#F87171" BorderThickness="1"
@@ -84,6 +84,8 @@
             <Button Style="{StaticResource SecondaryButton}"
                     Margin="8,0,0,0"
                     Content="⟳"
+                    AutomationProperties.Name="Refresh"
+                    AutomationProperties.HelpText="Refresh from API"
                     Click="Refresh_Click"
                     ToolTip="Refresh from API"/>
         </StackPanel>

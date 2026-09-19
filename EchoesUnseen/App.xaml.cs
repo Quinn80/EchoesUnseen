@@ -98,6 +98,20 @@ public partial class App : System.Windows.Application
         Settings.Changed += (_, s) =>
             Current?.Dispatcher.BeginInvoke(() => Services.ThemeService.ApplyCurrent(s));
 
+        // Tooltips carry the wheel's labels and every hint in Settings, and WPF
+        // hides them again after five seconds — too quick for anyone reading with
+        // a magnifier or a screen reader. Thirty seconds, everywhere. This has to
+        // be metadata rather than a style: the duration belongs to the control
+        // that OWNS the tooltip, and no single implicit style reaches them all.
+        try
+        {
+            System.Windows.Controls.ToolTipService.ShowDurationProperty.OverrideMetadata(
+                typeof(DependencyObject), new FrameworkPropertyMetadata(30000));
+            System.Windows.Controls.ToolTipService.InitialShowDelayProperty.OverrideMetadata(
+                typeof(DependencyObject), new FrameworkPropertyMetadata(350));
+        }
+        catch (Exception ex) { CrashLogger.Log("Tooltip duration", ex); }
+
         // Hook crash logging so we never silently disappear.
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;

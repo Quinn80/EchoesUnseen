@@ -1,5 +1,172 @@
 # Echoes Unseen — release changelog
 
+# Echoes Unseen 1.6B
+
+Compared against the **public b1.5** release, commit `e8fd494`. Seven commits, 52 files,
+about 6,700 lines added. Every entry below was checked against the source and the tests at
+commit `bee0879`; nothing is written from memory, and nothing that is only a hook for future
+work is described as a feature.
+
+| | |
+|---|---|
+| version in code | `1.6.0` (`AssemblyVersion` / `FileVersion` `1.6.0.0`) |
+| version shown on the About tab | `1.6B` |
+| release version / filename | **1.6B** / `EchoesUnseen-1.6B.exe` |
+| build stamp | `build20260918-1739` (UTC) |
+| commit | `bee0879` |
+| distribution build | Release, win-x64, self-contained, single file, compressed, `-p:Distribution=true`; 138.4 MB; SHA-256 `179B445ADF7F7EC97892BF2A71371B2E38E93607201FB3B812B2BF4EE04FB0EC` |
+| support address | `Echoes.Unseen@pm.me` |
+| hover reader default | **Enhanced Hover Targeting (OpenCV + RapidOCR)**; Classic remains in Settings |
+
+---
+## Vision Accessibility Suite
+
+A new **Accessibility** tab in Settings, between Features and About, holding the global
+visual preferences the whole app respects. It is organised by what somebody needs — larger,
+higher contrast, less motion, stronger focus, where on the screen — and never by a diagnosis.
+There is no glaucoma mode and no macular-degeneration mode: two people with the same
+diagnosis often need opposite things.
+
+**Quick setup** offers seven starting points, each with a line of plain language: Standard,
+Low Vision, High Contrast, Color Vision, Eye Comfort, Screen Reader First, Custom. A profile
+is a **starting point, not a lock** — changing any single setting afterwards moves the profile
+to Custom and keeps the change. Choosing a profile is entirely optional.
+
+Six collapsible groups, two open by default:
+
+- **Readability and size** — interface scale (0.85–1.60, applied to panels, control heights,
+  padding, switches, tabs and fields, and to the wheel when its own scale is untouched), text
+  size, bold text, larger controls, stronger borders, tooltip size, and how large long lists
+  are drawn.
+- **Colour and contrast** — colour-vision palettes for protanopia, deuteranopia and
+  tritanopia; high contrast; reduce transparency; solid backgrounds behind text; and a choice
+  of accent colour (seven measured options, or your own with a plain-language readability
+  check). These change Echoes Unseen's own colours. They are never a filter over Guild Wars 2.
+- **Motion and eye comfort** — reduce motion, stop pulsing indicators, reduce glow, stop
+  decorative animation, reduce flashing, dim bright effects.
+- **Focus and visibility** — focus indicator strength (Standard, Strong, Extra strong; the
+  ring is white inside black at every strength, never a hue), stronger marks on selected
+  items, simplified interface, hide decorative effects.
+- **Preferred viewing area** — where on the screen accessibility messages are easiest to see,
+  stored as fractions of the screen so it survives a change of monitor. **Stored only**: it
+  has a live API and nothing consumes it yet. It is not a feature you can see working.
+- **Advanced** — a custom accent colour with a readability check, and a custom viewing area
+  as four fractions.
+
+Also: **Reset accessibility settings** with confirmation, a reset for each group, and every
+control has an accessible name, a spoken confirmation when it changes, and a plain-language
+explanation. Collapsible groups announce expanded and collapsed.
+
+**Nothing was duplicated.** Text size, High Contrast and the old "Access Mode" **moved** here
+from the HUD tab; an automated check fails if any control ever appears on two tabs.
+
+## Colour vision and contrast
+
+An audit of every theme and control, measured rather than judged by eye: WCAG contrast and
+CIEDE2000 distance, each re-computed as protanopia, deuteranopia and tritanopia receive them.
+95 failing checks became 0.
+
+- **The keyboard focus ring was invisible on filled buttons.** It was drawn in the theme's
+  accent, and primary buttons are filled with that accent: 1:1 contrast in all seven themes.
+  It is now a white ring inside a black halo — a brightness edge, not a hue — 4.9:1 to 14.1:1
+  worst case, and visible to every kind of colour vision.
+- **Tooltips rendered empty.** There was no tooltip style, so they used WPF's pale card while
+  the app-wide text style painted their text white. Every tooltip in the app was affected,
+  including the wheel's own labels. Fixed, and tooltips now stay on screen for 30 seconds
+  rather than 5.
+- **The row an open dropdown was set to** was a 1.5:1 shade. It now carries a tick and bold
+  text — 9.9:1 in every theme.
+- **Hovering or focusing a dropdown did nothing at all**: both triggers set the border to the
+  colour it already was.
+- **The selected tab** gained a bar along its top edge and a bold label, so selection is never
+  a fill alone.
+- **Three colours that carried information were changed** because they collapsed for a red- or
+  green-blind eye: hero points vs waypoints (CIEDE2000 1.2 apart under deuteranopia — the same
+  colour), Trading Post buy vs sell, and the error red, which missed the contrast minimum
+  under protanopia.
+- **Checkbox, tab and dropdown states** all carry a shape as well as a colour.
+
+## Screen reader and keyboard
+
+- **Twenty controls had no accessible name** — nine sliders, five icon-only refresh buttons,
+  two search boxes and three dropdowns. All named, with help text where the control needs
+  explaining.
+- Every accessibility change is **spoken** as it happens and written to the status line as a
+  live region.
+- Collapsible groups report expanded and collapsed, and their open state is also a different
+  glyph rather than only a shade.
+- Tab order follows the visual order down the page.
+
+## Hover Reader — Account Vault
+
+With the Account Vault open, hovers over item slots were being named **"Bank Tab 1"** or
+**"Bank Tab 2"**, sometimes with a price that belonged to nothing. In Quinn's 17 September
+session six of eight bank hovers failed this way. Each time the item's own tooltip had
+already been found and read — "13 Experience Boosters", "16 Black Lion Statuettes", "250
+Empyreal Fragments" — and was then discarded, correctly, because it is not about a bank tab.
+The target was wrong, not the tooltip.
+
+Two causes, two narrow fixes:
+
+- The window read as **inventory**, because the Inventory heading was nearer than the vault's
+  own. "Account Vault" (or a bank tab on screen) now makes the context **bank**, and a bank
+  slot is treated as an inventory slot: same one-object contract, same stack count.
+- The tab strip is a list, and a list row's band runs the width of the panel — so a pointer on
+  an item slot hundreds of pixels away was "inside" a tab's row. **A bank tab now wins only
+  when the pointer is on a tab and no other object's tooltip is anchored at the pointer.**
+
+Nothing else about targeting changed: no new rule about rows, distances or tooltips in
+general. The corpus confirms it — 222 of 242, zero regressions, inventory 33/33, identical to
+the run before the change. Eight of those cases are the Account Vault and Guild Bank
+recordings added for this release; every one of them passes.
+
+## UI and Settings
+
+- Settings tab order is now **Voice · API Keys · HUD · Keybinds · Features · Accessibility ·
+  About**.
+- **Exit Echoes Unseen** — a visible way to quit, in the Settings footer on every tab, with a
+  confirmation. The overlay has no title bar and does not take focus, so Alt+F4 goes to the
+  game; the only way out used to be the Ctrl+Shift+Q hotkey.
+- The About tab now shows the support address in full, with its own screen-reader wording.
+- Panels respect the accessibility settings live: interface scale, reduced glow and stopped
+  decoration take effect on the panel already open, not at the next launch.
+
+## Diagnostics and support
+
+- The support address is **`Echoes.Unseen@pm.me`** — in the feedback button, the About tab,
+  the README and the release notes. Without a Discord webhook the feedback button saves the
+  report to the Desktop, copies it to the clipboard and opens the user's mail app addressed
+  there; they press Send.
+- Version strings are consistent: assembly `1.6.0.0`, About `1.6B`, and every diagnostic
+  header and bug report carries `v1.6.0.0 build20260918-1739`.
+
+## Testing
+
+- **`tools/Accessibility/`** — 807 colour and structure checks (WCAG contrast and CIEDE2000
+  under all three colour-vision simulations, accessible names, colour-only state detection,
+  tab order, no duplicate controls), plus a renderer that draws the app's real controls and a
+  simulator that shows them as each eye receives them.
+- **`tools/Accessibility/SuiteCheck`** — 110 behaviour checks for the accessibility settings,
+  including migration from a b1.5 file and drawing the real Settings panel.
+- **`HoverReplay selftest`** — the Account Vault rule, checked against the real pointers and
+  tooltips from the session that produced the bug. 16 of 16.
+
+## Privacy and local processing
+
+Unchanged, and still accurate: screen reading and speech run on this computer. OpenCV finds
+the object, RapidOCR reads it, Echoes Unseen speaks it. The colour-vision settings change the
+app's own colours and never filter the game. What uses the network is unchanged: the official
+Guild Wars 2 API with your key, the wiki, the version check, one-time voice and model
+downloads, ElevenLabs only if you switch it on, and a bug report only when you send one.
+
+## Known issues
+
+See `KNOWN-ISSUES.md`.
+
+---
+
+# Echoes Unseen b1.5
+
 **Comparison point:** the last public release, **b1.4** (published 2026-07-30 23:57 UTC on
 `github.com/Quinn80/EchoesUnseen`, asset `EchoesUnseen-b1.4.exe`, a full release, not a
 prerelease). The repository carries no release tags, so the comparison was made against the
@@ -11,9 +178,12 @@ between that commit and `e6bf016` (2026-09-17): **120 commits, 114 files, ~20,00
 |---|---|
 | version in code | `1.5.0` (`AssemblyVersion` / `FileVersion` `1.5.0.0`) |
 | version shown on the About tab | `1.5b` |
-| release version / filename | **not yet decided — see RELEASE-SUMMARY-FOR-QUINN.md** |
-| build stamp | stamped automatically at publish time as `build<yyyyMMdd-HHmm>` (UTC) |
-| distribution build for this release | **not built yet** — this document describes the verified development source |
+| release version / filename | **b1.5** / `EchoesUnseen-b1.5.exe` |
+| build stamp | `build20260918-1235` (UTC) |
+| commit | `c762778` |
+| distribution build | Release, win-x64, self-contained, single file, compressed, `-p:Distribution=true`; 138.4 MB; SHA-256 `742220F9F248CB3C8F2C40325B69C9A51D194A33503220FD1702D9E1053286EA` |
+| support address | `Echoes.Unseen@pm.me` |
+| hover reader default | **Enhanced Hover Targeting (OpenCV + RapidOCR)**; Classic remains in Settings |
 
 Every entry below was checked against the current source, not against memory. Where a feature
 is behind a switch or still beta, it says so.
@@ -32,7 +202,7 @@ resting on inside Guild Wars 2.
   reads that object and its own tooltip and price. It covers: inventory slots, merchant rows,
   Wizard's Vault reward cards, Trading Post rows, Gem Store cards and banners, buttons, NPC
   dialog choices, menu rows, tab and icon labels, and world nameplates.
-- **The old ("classic") reader is still there** and remains selectable in Settings.
+- **On by default in b1.5.** The switch is *Settings → Features → "Enhanced Hover Targeting - OpenCV plus RapidOCR (recommended)"*. Turning it off returns to **Classic Hover Targeting**, which reads the text nearest the pointer.
 - **RapidOCR is the hover reader's recognition engine**, with Windows OCR as the fallback if the
   models cannot load. Chosen on measured evidence against real captures (`RAPIDOCR-EVALUATION.md`):
   it found about half again as many lines as Windows OCR with the lowest junk rate of the three
@@ -60,11 +230,69 @@ resting on inside Guild Wars 2.
 ### How it is judged
 - **An offline test harness (`tools/HoverReplay`) replays recorded hovers** — real screenshots
   with the real pointer position from the diagnostics log — and scores what the reader would say.
-  The current corpus holds 235 cases and 26 multi-step sequences from 27 recorded sessions.
-- **Current score: 214 of 234 cases pass** (198 of 214 with a logged, real pointer), **22 of 26
-  sequences**, with no case failing that passed at the accepted baseline.
+  At b1.5 the corpus held 235 cases and 26 multi-step sequences from 27 recorded sessions.
+- **Score at b1.5: 214 of 234 cases pass** (198 of 214 with a logged, real pointer), **22 of 26
+  sequences**, with no case failing that passed at the accepted baseline. (1.6B adds the
+  Account Vault recordings and scores 222 of 242; see the 1.6B section above.)
 - **Typical hover: about half a second** (median 506 ms, 95th percentile 652 ms end to end,
   measured on recorded frames).
+
+## Accessibility — the Vision Accessibility Suite
+
+A new **Accessibility** tab in Settings, between Features and About, holding the global visual
+preferences the whole app respects. It is organised by what somebody needs — larger, higher
+contrast, less motion, stronger focus, where on the screen — and never by a diagnosis.
+
+- **Quick setup** offers seven starting points: Standard, Low Vision, High Contrast, Color
+  Vision, Eye Comfort, Screen Reader First, Custom. Each is a **starting point, not a lock**:
+  changing any single setting afterwards moves the profile to Custom and keeps the change.
+- **Readability and size** — interface scale (0.85–1.60, applied to panels, control heights,
+  padding, switches, tabs and fields, and to the wheel when its own scale is untouched), text
+  size, bold text, larger controls, stronger borders, tooltip size, and how large long lists are
+  drawn.
+- **Colour and contrast** — colour-vision palettes for protanopia, deuteranopia and tritanopia,
+  high contrast, reduce transparency, solid backgrounds behind text, and a choice of accent
+  colour (seven measured options, or your own with a plain-language readability check). These
+  change Echoes Unseen's own colours; they are never a filter over Guild Wars 2.
+- **Motion and eye comfort** — reduce motion, stop pulsing, reduce glow, stop decorative
+  animation, reduce flashing, dim bright effects.
+- **Focus and visibility** — focus indicator strength (the ring is white inside black at every
+  strength, never a hue), stronger marks on selected items, simplified interface, hide
+  decorative effects.
+- **Preferred viewing area** — where on the screen accessibility messages are easiest to see,
+  stored as fractions so it survives a change of monitor. *Nothing consumes it yet*: it is a
+  stored preference with a live API for the Story Guide and the Music Guide.
+- **Reset accessibility settings**, and a reset for each group, touching nothing outside the tab.
+- Every control has an accessible name, a spoken confirmation when it changes, and a
+  plain-language explanation. Collapsible groups announce expanded and collapsed.
+- Text size, High Contrast and the old "Access Mode" **moved** here from the HUD tab rather than
+  being duplicated; an automated check fails if any control appears on two tabs.
+- Defaults reproduce the previous build exactly, so upgrading changes nothing you did not ask
+  for.
+
+## Colour, contrast and non-colour state
+
+An audit of every theme and control, measured rather than judged by eye — WCAG contrast and
+CIEDE2000 distance, each re-computed as protanopia, deuteranopia and tritanopia receive it.
+
+- **The keyboard focus ring was invisible on filled buttons** — it was drawn in the theme accent,
+  and primary buttons are filled with that accent: 1:1 contrast in all seven themes. It is now a
+  white ring inside a black halo, 4.9:1 to 14.1:1 worst case, and it carries no hue at all.
+- **Tooltips rendered empty.** There was no tooltip style, so they used WPF's pale card while the
+  app-wide text style painted their text white. Every tooltip in the app was affected. Fixed,
+  and they now stay on screen for 30 seconds rather than 5.
+- **The chosen row of an open dropdown** was a 1.5:1 shade; it now carries a tick and bold text.
+- **Hovering or focusing a dropdown did nothing at all** — both triggers set the border to the
+  colour it already was.
+- **The selected tab** gained a bar along its top edge and a bold label, so selection is not a
+  fill alone.
+- **Twenty controls had no name for a screen reader** — nine sliders, five icon-only refresh
+  buttons, two search boxes, three dropdowns.
+- **There was no visible way to quit**: the overlay has no title bar, so Alt+F4 goes to the game.
+  Settings now has an **Exit Echoes Unseen** button that confirms first.
+- Colours that carried information were re-measured and three were changed: hero points vs
+  waypoints (CIEDE2000 1.2 apart under deuteranopia — the same colour), Trading Post buy vs sell,
+  and the error red, which missed the contrast minimum under protanopia.
 
 ## Screen Reader
 
@@ -176,8 +404,10 @@ resting on inside Guild Wars 2.
   or in batches, with exact-millisecond timing preserved and duplicate imports prevented.
 - **Full three-octave Guild Wars 2 instrument support** (keys 1–8 with 9/0 for octave), including
   Piano and Verdarach, and rich community notation (chords, octaves, runs, pauses).
-- **Auto-play** uses the bundled AutoHotkey engine and hardware scan codes, so Guild Wars 2
-  actually registers the notes; it can relaunch itself elevated when Windows blocks input.
+- **Auto-play** is an optional instrument feature: it sends the imported song's instrument key
+  presses through the bundled AutoHotkey engine using hardware scan codes, so Guild Wars 2 registers
+  the notes. It does not control character movement, combat, story progression or dialog choices.
+  It can relaunch itself elevated when Windows blocks input.
 - **Practice guide** with a Guitar-Hero-style note overlay; Step mode (waits for each note) is the
   default, with a wider tempo range and a larger, raised overlay.
 - **Song search** browses the community song library on the Guild Wars 2 Wiki and adds songs to
@@ -188,6 +418,10 @@ resting on inside Guild Wars 2.
 
 - **Windows Natural** (local neural) joined Piper, Windows Speech (SAPI) and the optional
   ElevenLabs cloud voice.
+- **Speech-to-text, for Voice to Chat and the spoken wiki search:** the recognition built into
+  Windows is the default; **Whisper** (local, `tiny.en` / `base.en` / `small.en`, downloaded once on
+  first use) is the optional alternative chosen in Settings → Voice. Verified in this build:
+  `SttEngine` defaults to `windows`, and Whisper runs only when selected.
 - **Speech runs in two lanes**, so a long read no longer cuts off a short announcement.
 - Speech speed goes up to 4×.
 - Speech can be handed to **NVDA** instead.
@@ -247,7 +481,10 @@ Added this release: **OpenCvSharp4 and its official slim Windows runtime 4.13.0.
 (Apache-2.0), **RapidOcrNet 4.2.0** (Apache-2.0) with the **PP-OCRv5** mobile models (Apache-2.0),
 and their dependencies **ONNX Runtime 1.29.0** (MIT), **SkiaSharp 3.119.1** (MIT) and **Clipper2
 2.0.0** (Boost Software License 1.0). **AutoHotkey** (GPL-2.0) is bundled and run as a separate
-process for music auto-play. See `THIRD-PARTY-NOTICES-UPDATE.md` for the full audited list.
+process for music auto-play. **WebView2 is no longer used** — the HUD is native WPF — so it carries
+no notice. `THIRD-PARTY-NOTICES.md` was updated for this release with Clipper2,
+Microsoft.Extensions.AI.Abstractions and the exact versions that ship, and it is published with the
+release.
 
 ## Bug fixes
 
@@ -268,8 +505,9 @@ process for music auto-play. See `THIRD-PARTY-NOTICES-UPDATE.md` for the full au
 
 ## Known limitations
 
-The new hover targeting is **beta**. It is measured on 235 recorded cases and it does not read
-every Guild Wars 2 interface perfectly.
+The new hover targeting is on by default and is still **beta**. It is measured on 235 recorded
+cases and it does not read every Guild Wars 2 interface perfectly. Classic Hover Targeting remains
+available in Settings.
 
 - **See-through tooltips** over some Wizard's Vault and Gem Store cards can still mix a neighbour's
   caption into what is read.

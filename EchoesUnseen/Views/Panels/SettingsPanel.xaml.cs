@@ -125,13 +125,12 @@ public partial class SettingsPanel : UserControl, IPanel
         foreach (ComboBoxItem item in AccessModeCombo.Items)
             if ((string)item.Tag == s.AccessMode) { AccessModeCombo.SelectedItem = item; break; }
         HudScaleSlider.Value = s.HudScale;
-        FontSizeSlider.Value = s.FontSize;
-        HighContrastCheck.IsChecked = s.HighContrast;
         EarconsCheck.IsChecked = s.PanelEarcons;
         AnnounceHudCheck.IsChecked = s.AnnounceHudActivation;
         BuildHudButtonsList(); // v21: HUD button visibility checkboxes
         BuildFeatureToggles();
         BuildKeybindsList();
+        PopulateAccessibilityTab();     // the Vision Accessibility Suite
 
         _loaded = true;
     }
@@ -168,7 +167,7 @@ public partial class SettingsPanel : UserControl, IPanel
     // ── Feedback (distribution build) ─────────────────────────────────────────
     /// <summary>Where feedback goes. A dedicated address keeps the developer's
     /// personal email private in the public build. Change this one line to retarget.</summary>
-    private const string FeedbackEmail = "echoesunseen.feedback@gmail.com";
+    private const string FeedbackEmail = "Echoes.Unseen@pm.me";
 
     private async void Feedback_Click(object sender, RoutedEventArgs e)
     {
@@ -887,6 +886,43 @@ public partial class SettingsPanel : UserControl, IPanel
         }
     }
 
+    /// <summary>
+    /// Close the whole application, from the Settings footer.
+    ///
+    /// Why this button exists: the overlay has no title bar, no taskbar button and
+    /// does not take focus, so Alt+F4 lands on Guild Wars 2 instead. The only way
+    /// out was Ctrl+Shift+Q — fine once you know it, invisible if you don't.
+    ///
+    /// It asks first, because quitting by accident in the middle of a session is
+    /// worse than the extra click, and a MessageBox is read properly by NVDA.
+    /// The quit itself goes through MainWindow.QuitApp so the spoken goodbye and
+    /// the force-close timer stay in one place.
+    /// </summary>
+    private void ExitApp_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var answer = MessageBox.Show(
+                "Close Echoes Unseen?\n\nGuild Wars 2 will keep running. You can start Echoes Unseen again at any time.",
+                "Exit Echoes Unseen",
+                MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+            if (answer != MessageBoxResult.Yes)
+            {
+                SetSaveStatus("Still running.");
+                _tts?.SpeakAsync("Still running.");
+                return;
+            }
+
+            if (Window.GetWindow(this) is MainWindow mw) mw.QuitApp();
+            else System.Windows.Application.Current.Shutdown();     // no window? still honour the ask
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.Log("SettingsPanel.ExitApp", ex);
+            SetSaveStatus($"Could not close: {ex.Message}");
+        }
+    }
+
     private void SetSaveStatus(string text)
     {
         SaveStatus.Text = text;
@@ -1366,18 +1402,33 @@ public partial class SettingsPanel : UserControl, IPanel
         App.Settings.NotifyChanged();
     }
 
+    /// <summary>The exact text size, under Accessibility > Readability. It writes the
+    /// same AppSettings.FontSize the old HUD slider wrote, so an upgraded settings file
+    /// keeps the size its owner chose.</summary>
     private void FontSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (!_loaded) return;
-        App.Settings.Current.FontSize = (int)FontSizeSlider.Value;
-        App.Settings.NotifyChanged();
+        var size = (int)FontSizeSlider.Value;
+        FontSizeLabel.Text = $"Exact size: {size} point";
+        A11yEdit(s =>
+        {
+            s.FontSize = size;
+            s.Accessibility.TextSize = "custom";
+        }, $"Text size {size}.");
     }
 
     private void HighContrastCheck_Changed(object sender, RoutedEventArgs e)
     {
         if (!_loaded) return;
-        App.Settings.Current.HighContrast = HighContrastCheck.IsChecked == true;
-        App.Settings.NotifyChanged();
+        var on = HighContrastCheck.IsChecked == true;
+        A11yEdit(s =>
+        {
+            s.HighContrast = on;
+            // The colour-vision list has "High contrast" as one of its choices, so the
+            // two must agree rather than quietly contradict each other.
+            if (!on && s.Accessibility.ColorVision == "high-contrast")
+                s.Accessibility.ColorVision = "standard";
+        }, on ? "High contrast on." : "High contrast off.");
     }
 
     private void EarconsCheck_Changed(object sender, RoutedEventArgs e)

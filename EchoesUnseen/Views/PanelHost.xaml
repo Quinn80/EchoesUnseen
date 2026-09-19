@@ -277,24 +277,10 @@
                                     <Border.RenderTransform>
                                         <TranslateTransform x:Name="BadgeFloat" Y="0"/>
                                     </Border.RenderTransform>
-                                    <Border.Triggers>
-                                        <!-- crest-float: the badge gently bobs like it's hovering -->
-                                        <EventTrigger RoutedEvent="Loaded">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="BadgeFloat"
-                                                                     Storyboard.TargetProperty="Y"
-                                                                     To="-3" Duration="0:0:2"
-                                                                     AutoReverse="True"
-                                                                     RepeatBehavior="Forever">
-                                                        <DoubleAnimation.EasingFunction>
-                                                            <SineEase EasingMode="EaseInOut"/>
-                                                        </DoubleAnimation.EasingFunction>
-                                                    </DoubleAnimation>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                    </Border.Triggers>
+                                    <!-- The crest bobs gently - started in code-behind
+                                         (StartDecorativeMotion), because a storyboard begun
+                                         from a trigger here could never be stopped again and
+                                         Reduce Motion has to take effect at once. -->
                                     <Border.Background>
                                         <RadialGradientBrush Center="0.5,0.45" GradientOrigin="0.5,0.45"
                                                              RadiusX="0.6" RadiusY="0.6">
@@ -347,19 +333,8 @@
                                         <Rectangle.Effect>
                                             <DropShadowEffect Color="#FFC930C2" BlurRadius="10" ShadowDepth="0" Opacity="0.7"/>
                                         </Rectangle.Effect>
-                                        <Rectangle.Triggers>
-                                            <EventTrigger RoutedEvent="Loaded">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="DividerFlow"
-                                                                         Storyboard.TargetProperty="X"
-                                                                         From="-1" To="1"
-                                                                         Duration="0:0:3.5"
-                                                                         RepeatBehavior="Forever"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Rectangle.Triggers>
+                                        <!-- The divider's light travels along it; started in
+                                             code-behind for the same reason as the crest. -->
                                     </Rectangle>
                                 </StackPanel>
 

@@ -85,8 +85,20 @@ public class SettingsService
     /// So each entry here moves a value ON ONLY IF it is still the exact old default -
     /// i.e. the user never chose it. Anything deliberately set is left alone.
     /// </summary>
-    private static void Migrate(AppSettings s)
+    public static void Migrate(AppSettings s)
     {
+        // A file written before the Accessibility tab existed has no block at all.
+        // Give it the defaults, which reproduce b1.5 exactly - upgrading must never
+        // change how somebody's interface looks without them asking.
+        s.Accessibility ??= new AccessibilitySettings();
+        if (string.IsNullOrWhiteSpace(s.Accessibility.Profile)) s.Accessibility.Profile = "standard";
+
+        // Someone who had moved the old Font Size slider away from 22 chose that size
+        // deliberately. Keep it exactly, as "Exact size", rather than rounding them
+        // into one of the new presets.
+        if (s.Accessibility.TextSize == "standard" && s.FontSize != 22)
+            s.Accessibility.TextSize = "custom";
+
         // Ctrl+Alt+B was already claimed by other software and never registered, so it
         // was a shortcut that silently did nothing. F9 is free and needs one finger.
         if (s.Keybinds.RecordBug is "Ctrl+Alt+B") s.Keybinds.RecordBug = "F9";
@@ -147,6 +159,9 @@ public class SettingsService
             var keepEleven = Current.ElevenLabsApiKey;
             var keepFirstRun = Current.FirstRunIntroSpoken;
 
+            // A full reset does include the Accessibility tab, because that is what
+            // "reset everything" means. Resetting ONLY accessibility is a separate
+            // button on that tab (AccessibilityService.ResetAll).
             Current = new AppSettings
             {
                 Gw2ApiKey = keepGw2,

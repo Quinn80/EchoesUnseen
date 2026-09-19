@@ -28,9 +28,9 @@
     <!-- Beta line. The old "21.x" numbering belonged to the pre-rebuild WPF
          builds; this native rebuild ships as Beta 1.x so tester reports and the
          About tab agree. -->
-    <Version>1.5.0</Version>
-    <AssemblyVersion>1.5.0.0</AssemblyVersion>
-    <FileVersion>1.5.0.0</FileVersion>
+    <Version>1.6.0</Version>
+    <AssemblyVersion>1.6.0.0</AssemblyVersion>
+    <FileVersion>1.6.0.0</FileVersion>
     <Company>Echoes Unseen</Company>
     <Product>Echoes Unseen</Product>
     <Description>Accessibility overlay companion for Guild Wars 2</Description>
