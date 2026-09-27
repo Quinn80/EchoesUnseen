@@ -13,10 +13,13 @@
   <img src="https://img.shields.io/badge/license-MIT-3fb950" alt="MIT License">
 </p>
 
+**Welcome to Tyria, your way. 💜**
+
 Echoes Unseen is a free accessibility companion for Guild Wars 2, built for blind and low-vision
-players and designed for a broad range of visual access needs. It helps expose game information
-through screen reading, the Hover Reader, speech, navigation assistance and customizable
-accessibility settings.
+players and designed for a broad range of visual access needs.
+
+It helps expose game information through screen reading, the Hover Reader, speech, navigation
+assistance and customizable accessibility settings.
 
 It runs as a transparent, click-through overlay on top of the game. A radial wheel gives you its
 tools, driven entirely by keyboard and voice — nothing requires seeing the screen — and everything
@@ -27,33 +30,60 @@ is spoken aloud by a natural voice running on your own computer.
 </p>
 
 > **Current release: 1.6B** · Windows 10/11 (64-bit) · Free (donations welcome) ·
-> **[⬇ Download](https://github.com/Quinn80/EchoesUnseen/releases/latest)**
+> **[Download](https://github.com/Quinn80/EchoesUnseen/releases/latest)**
 
 ---
 
+## Find your way around this README
+
+- [Download and get started](#download)
+- [What Echoes Unseen does](#what-echoes-unseen-does)
+- [Vision accessibility](#vision-accessibility)
+- [Hover Reader](#hover-reader)
+- [Navigation](#navigation)
+- [Privacy and local processing](#privacy-and-local-processing)
+- [Known issues](#known-issues)
+- [Support and feedback](#support-and-feedback)
+- [Contributing](#contributing)
+- [Building from source](#building-from-source)
+
 ## What Echoes Unseen Does
+
+### Read, listen and find
 
 - **Reads what you point at** — rest the mouse on something in the game and hear *that one thing*:
   an inventory item, a merchant row with its own price, a Wizard's Vault card, a bank slot.
 - **Reads the screen and the chat** — anything on screen can be spoken, including whatever the
   mouse is resting on.
 - **Speaks with a natural voice** — a local neural voice, or through NVDA if that is what you use.
+- **Finds anything you own** — searches your bank, every character's bags and material storage
+  through the official Guild Wars 2 API, and tells you exactly where something is.
+
+### Explore, chat and play
+
 - **Guides you around the map** — audio sonar, painted trails, and spoken turn-by-turn directions.
 - **Lets you talk instead of type** — dictate into chat with local speech-to-text.
 - **Plays music** — import songs and play Guild Wars 2 instruments, with a practice guide.
+
+### Make the interface yours
+
 - **Adapts to how you see** — interface and text size, contrast, colour-vision palettes, motion,
   glow and focus strength. Set up in one choice, or tuned control by control.
-- **Finds anything you own** — searches your bank, every character's bags and material storage
-  through the official Guild Wars 2 API, and tells you exactly where something is.
+
+### Meet the tool wheel
 
 **The tools on the wheel:** Screen Reader · Heart Quests · Sonar Trails · Chat Reader ·
 Voice to Chat · Music Player · Oracle · Account Search · Trading Post · Build & Gear ·
 Map Completion · Event Timers · Wizard's Vault · Settings. Any of them can be hidden from the ring
 in **Settings → HUD**.
 
-**Driving the wheel:** hold `Alt` and tap the arrow keys to move between tools — the voice names
-each one — then `Alt+Enter` to open. It works while the game has focus. The wheel shrinks to just
-its logo while you play and unfolds when you hover it.
+**Driving the wheel:**
+
+1. Hold `Alt` and tap the arrow keys to move between tools. The voice names each one.
+2. Press `Alt+Enter` to open the selected tool.
+
+It works while the game has focus. The wheel shrinks to just its logo while you play and unfolds
+when you hover it.
 
 ---
 
@@ -65,7 +95,7 @@ contrast sensitivity, field-of-view limitations, light sensitivity and motion se
 
 These are interface options, not treatment, and they make no medical claims.
 
-| group | what is in it |
+| Settings group | What you can adjust |
 |---|---|
 | Quick setup | Standard · Low Vision · High Contrast · Color Vision · Eye Comfort · Screen Reader First · Custom |
 | Readability and size | interface scale, text size, bold text, larger controls, stronger borders, tooltip size |
@@ -73,6 +103,8 @@ These are interface options, not treatment, and they make no medical claims.
 | Motion and eye comfort | reduce motion, stop pulsing, reduce glow, stop decorative animation, reduce flashing, dim bright effects |
 | Focus and visibility | focus indicator strength, stronger selection marks, simplified interface |
 | Preferred viewing area | where on screen messages are easiest for you to see |
+
+### Start with what you need
 
 **Organised by need, not by diagnosis.** There is no glaucoma mode and no macular-degeneration
 mode. Two people with the same diagnosis routinely need opposite things — one wants everything
@@ -82,6 +114,8 @@ their eyes to a settings page to make text bigger. Every choice is phrased as a 
 
 **A profile is a starting point, not a lock.** Change any setting afterwards and it simply becomes
 Custom, keeping your change. You never have to pick one at all.
+
+### What these settings change today
 
 **The colour settings change Echoes Unseen's own interface.** Nothing is filtered over Guild Wars 2.
 
@@ -133,14 +167,20 @@ sessions before it ships, and the current limits are listed in the
 
 ## Navigation
 
+### A little help finding your next adventure 🧭
+
 - **Sonar Trails** — an audio sonar pings you toward your next waypoint, heart or point of
   interest, and tells you how far away it is and which way it lies.
 - **Spoken turn-by-turn directions** — a sightless compass for getting somewhere without seeing
   the map.
 - **Painted trails** — a route drawn on the ground for anyone who can see some of the screen.
-- **Marker packs** — the Navigator can import trail and marker-pack files you supply yourself.
-  **No marker packs ship with Echoes Unseen**, in this or any release. More trail packs coming
-  soon!
+
+### Bring your own marker packs
+
+The Navigator can import trail and marker-pack files you supply yourself.
+**No marker packs ship with Echoes Unseen**, in this or any release.
+
+More trail packs coming soon!
 
 ---
 
@@ -174,10 +214,14 @@ sessions before it ships, and the current limits are listed in the
 
 ## Privacy and Local Processing
 
+### What stays on your PC
+
 **Core screen-reading and accessibility processing happens locally on your PC.** The Hover Reader,
 the Screen Reader and the Chat Reader capture and recognise text on your own machine with OpenCV,
 RapidOCR and Windows OCR, and Piper speaks it locally. Normal live screen reading does not upload
 your screen anywhere. There is no telemetry and no account.
+
+### What uses the network
 
 Some features do use the network:
 
@@ -187,6 +231,8 @@ Some features do use the network:
 - **one-time downloads** of voices and optional models (Piper, Whisper, Tesseract language data)
 - **ElevenLabs**, only if you turn it on with your own key
 - a **bug report**, only when you choose to send one
+
+### You choose whether to send a report
 
 **Bug reports are always your choice.** Pressing the bug-record key (`F9`) saves a short screen
 recording, recent screenshots and logs into your Downloads folder as a zip. The "Send feedback /
@@ -199,14 +245,18 @@ useful.
 
 ## Download
 
-**[⬇ Download the latest release — `EchoesUnseen-1.6B.exe`](https://github.com/Quinn80/EchoesUnseen/releases/latest)**
+**[Download the latest release — `EchoesUnseen-1.6B.exe`](https://github.com/Quinn80/EchoesUnseen/releases/latest)**
 
-It is **self-contained — no .NET install needed.** Download it, then run it. Windows 10/11
-(64-bit), about 138 MB.
+**Windows 10/11 (64-bit) · About 138 MB · Self-contained — no .NET install needed.**
+
+### Ready when you are
+
+1. Download `EchoesUnseen-1.6B.exe` from the release page above.
+2. Run the downloaded file.
+3. On first run, Echoes Unseen downloads six voices automatically.
 
 > On first launch, Windows SmartScreen may warn "unknown publisher" (it is an unsigned indie
-> build). Click **More info → Run anyway**. On first run it also downloads six voices
-> automatically.
+> build). Click **More info → Run anyway**.
 
 Your settings, voices and songs live in `%APPDATA%\EchoesUnseen` and carry over between releases.
 
@@ -227,7 +277,7 @@ control character movement, combat, story progression or dialog choices.
 What each piece actually does in the app. Full versions and licence texts are in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-| component | version | its role in Echoes Unseen |
+| Component | Version | Its role in Echoes Unseen |
 |---|---|---|
 | [OpenCV](https://opencv.org/) (via [OpenCvSharp](https://github.com/shimat/opencvsharp)) | 4.13.0 | Hover Reader interface-object geometry — where an object begins and ends |
 | [RapidOCR](https://github.com/RapidAI/RapidOCR) (via [RapidOcrNet](https://github.com/BobLd/RapidOcrNet)) | 4.2.0 | local Hover Reader OCR, using the PP-OCRv5 models |
@@ -272,16 +322,26 @@ embedded-resource line from `EchoesUnseen.csproj` to build without auto-play.
 
 ## Known issues
 
-The Hover Reader is beta, and the current known limits — translucent tooltips over some cards,
-the occasional misspelling, a pointer exactly on a row boundary, unusual currencies read as plain
-figures — are listed in full with each release. Two more are worth knowing in the Account Vault:
-pointing at the *first* bank tab header reads the empty search box above it as part of the same
-block, and an empty slot is silent rather than announced. See the
-[latest release notes](https://github.com/Quinn80/EchoesUnseen/releases/latest).
+The Hover Reader is beta. The current known limits are listed in full with each release:
+
+- Translucent tooltips over some cards.
+- The occasional misspelling.
+- A pointer exactly on a row boundary.
+- Unusual currencies read as plain figures.
+
+**In the Account Vault:**
+
+- Pointing at the *first* bank tab header reads the empty search box above it as part of the same block.
+- An empty slot is silent rather than announced.
+
+See the [latest release notes](https://github.com/Quinn80/EchoesUnseen/releases/latest)
+for the full list.
 
 ## Support and feedback
 
-**Echoes.Unseen@pm.me** — write any time: a problem, an idea, or something that reads wrongly.
+### Something not reading right? Let’s work it out
+
+**[Echoes.Unseen@pm.me](mailto:Echoes.Unseen@pm.me)** — write any time: a problem, an idea, or something that reads wrongly.
 
 If something is misread, press **F9** first. Echoes Unseen saves a short recording, some
 screenshots and its logs as a zip in your Downloads folder; attaching that says exactly what
@@ -290,8 +350,16 @@ contain pictures of your own screen, so sending one is always your choice.
 
 ## Contributing
 
-Feedback and suggestions are genuinely welcome — especially from players who use screen readers.
-Open an issue with what's confusing by ear, mis-read, or missing.
+### Help make Tyria easier to explore 💜
+
+Feedback and suggestions are welcome — especially from players who use screen readers.
+[Open an issue](https://github.com/Quinn80/EchoesUnseen/issues) and tell us:
+
+- What is confusing by ear.
+- What is misread.
+- What is missing.
+
+Interested in working with the code? Start with [Building from source](#building-from-source).
 
 ## Licences / Third-Party Notices
 
