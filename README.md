@@ -138,8 +138,9 @@ sessions before it ships, and the current limits are listed in the
 - **Spoken turn-by-turn directions** — a sightless compass for getting somewhere without seeing
   the map.
 - **Painted trails** — a route drawn on the ground for anyone who can see some of the screen.
-- **Marker packs** — the Navigator reads the open TacO / BlishHUD format so you can import your
-  own. **No marker packs ship with Echoes Unseen**, in this or any release.
+- **Marker packs** — the Navigator can import trail and marker-pack files you supply yourself.
+  **No marker packs ship with Echoes Unseen**, in this or any release. More trail packs coming
+  soon!
 
 ---
 
@@ -240,7 +241,7 @@ What each piece actually does in the app. Full versions and licence texts are in
 | [AutoHotkey](https://www.autohotkey.com/) | v2 | a separate process used for music auto-play |
 | **NVDA Controller Client** | — | speaks through NVDA when you ask it to |
 | **Guild Wars 2 API** | — | exact account data for the item finder, the Wizard's Vault and prices |
-| **TacO / BlishHUD format** | — | read for navigation; no packs are bundled |
+| **Community marker-pack format** | — | read for navigation; no packs are bundled |
 
 Built on **.NET 8 / WPF** as a native Windows overlay.
 

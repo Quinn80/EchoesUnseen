@@ -151,11 +151,9 @@ it does not modify, inject into, or automate the game.
 
 ## Marker packs
 
-The guide feature reads the open TacO / BlishHUD marker-pack format. No marker pack is
-bundled or redistributed — players supply their own. Enormous thanks to GW2TacO,
-BlishHUD, and every author who has drawn and freely shared a trail.
-
-GW2TacO itself is CC BY-NC 4.0; no GW2TacO source is used in Echoes Unseen.
+The guide feature can read marker-pack files that players supply themselves. No marker pack is
+bundled or redistributed, no third-party source is used, and no compatibility with any specific
+program, pack or creator is claimed here. More trail packs coming soon!
 
 ---
 
