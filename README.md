@@ -6,9 +6,9 @@ A free, unofficial Windows companion for Guild Wars 2, designed especially for p
 
 **[Download Echoes Unseen 2.0](https://github.com/Quinn80/EchoesUnseen/releases/tag/2.0)** · Windows 10/11, 64-bit · Public beta · No website account required
 
-![Illustrated V2 interface: the dragon launcher and tool menu beside a Sonar Trails panel with a current-map guide and separate Settings control.](https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/Echoes-Unseen-V2-interface-preview.png)
+![Echoes Unseen’s green launcher menu open over Guild Wars 2 gameplay.](https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/Echoes-Unseen-V2-in-game-burnt.png)
 
-*V2 interface mockup: an illustrated layout, not an in-game screenshot.*
+*In-game screenshot provided by Quinn; decorative burnt edges and a soft left-edge fade have been applied.*
 
 ## Start small
 
