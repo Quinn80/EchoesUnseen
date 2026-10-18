@@ -1,375 +1,78 @@
-<p align="center">
-  <img src="EchoesUnseen/Resources/Images/echoes-unseen-logo.png" alt="Echoes Unseen logo" width="220">
-</p>
+# Echoes Unseen
 
-<h1 align="center">Echoes Unseen</h1>
+**More ways to read, navigate and play.**
 
-<p align="center"><b>A free accessibility companion for Guild Wars 2.</b></p>
+A free, unofficial Windows companion for Guild Wars 2, designed especially for players with low vision. Choose spoken information, clearer creator trails and keyboard-accessible tools that work your way.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/release-1.6B-1f6feb" alt="Release 1.6B">
-  <img src="https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-0078D6" alt="Windows 10/11">
-  <img src="https://img.shields.io/badge/.NET-8.0-512BD4" alt=".NET 8">
-  <img src="https://img.shields.io/badge/license-MIT-3fb950" alt="MIT License">
-</p>
+**[Download Echoes Unseen 2.0](https://github.com/Quinn80/EchoesUnseen/releases/tag/2.0)** · Windows 10/11, 64-bit · Public beta · No website account required
 
-**Welcome to Tyria, your way. 💜**
+![Illustrated V2 interface: the dragon launcher and tool menu beside a Sonar Trails panel with a current-map guide and separate Settings control.](https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/Echoes-Unseen-V2-interface-preview.png)
 
-Echoes Unseen is a free accessibility companion for Guild Wars 2, built for blind and low-vision
-players and designed for a broad range of visual access needs.
+*V2 interface mockup: an illustrated layout, not an in-game screenshot.*
 
-It helps expose game information through screen reading, the Hover Reader, speech, navigation
-assistance and customizable accessibility settings.
+## Start small
 
-It runs as a transparent, click-through overlay on top of the game. A radial wheel gives you its
-tools, driven entirely by keyboard and voice — nothing requires seeing the screen — and everything
-is spoken aloud by a natural voice running on your own computer.
+1. Download **Echoes.Unseen.exe** from the [2.0 release](https://github.com/Quinn80/EchoesUnseen/releases/tag/2.0). It is one self-contained executable; no separate .NET installation is required.
+2. Open Guild Wars 2, then launch Echoes Unseen normally. Close an older running copy first and back up your settings before upgrading.
+3. Click the dragon or press **Alt+Down**, choose a comfortable voice and text size in Settings, and try one tool at a time.
 
-<p align="center">
-  <img src="docs/images/hud-wheel-b1.5.png" alt="The Echoes Unseen HUD: a ring of glowing tool icons around a compass rose and a blue dragon." width="360">
-</p>
+The file is unsigned. Windows SmartScreen may warn; verify the official release and its SHA-256 rather than disabling Windows security. Storage for voices, recognition models and packs is additional to the executable download.
 
-> **Current release: 1.6B** · Windows 10/11 (64-bit) · Free (donations welcome) ·
-> **[Download](https://github.com/Quinn80/EchoesUnseen/releases/latest)**
+## What you can do
 
----
+- **Read supported game text:** hover over items, player names and interface rows. The default dwell is 400 ms; OCR and speech take additional processing time.
+- **Display creator trails:** themed Ribbon + Arrows or Arrows Only, galaxy effects and configurable objective markers. Creator paths and section gaps are preserved.
+- **Find account items:** search supported storage and character items and see their locations, with Build & Gear and Trading Post tools alongside. Account data requires a GW2 API key.
+- **Communicate:** hear chat-channel announcements and optional whisper cues; dictate locally with Whisper through a movable recorder with Copy, Read and Delete controls.
+- **Learn music manually:** ten aligned lanes, five themes and four pacing modes. Timed songs have falling cues; untimed sheets stay static. Autoplay and AutoHotkey have been removed.
+- **Choose your presentation:** text and interface size, contrast, motion, Standard/Clarity choices and voice preferences. Cori is the default app voice. NVDA routing is optional.
+- **Keep information close:** Heart Quests, Map Completion, Event Timers, Wizard’s Vault, Wiki search and possible rift-site markers.
 
-## Find your way around this README
+[Read about the app](https://echoesoftyria.com/echoes-unseen) · [Full 2.0 release notes](https://github.com/Quinn80/EchoesUnseen/releases/tag/2.0)
 
-- [Download and get started](#download)
-- [What Echoes Unseen does](#what-echoes-unseen-does)
-- [Vision accessibility](#vision-accessibility)
-- [Hover Reader](#hover-reader)
-- [Navigation](#navigation)
-- [Privacy and local processing](#privacy-and-local-processing)
-- [Known issues](#known-issues)
-- [Support and feedback](#support-and-feedback)
-- [Contributing](#contributing)
-- [Building from source](#building-from-source)
+## Community creators and contributors
 
-## What Echoes Unseen Does
+**Lady Elyssa** contributes trail and achievement guide content and valuable direction for the project.
 
-### Read, listen and find
+**[Tekkit’s Workshop](https://www.tekkitsworkshop.net/)** creates the All-In-One marker and trail pack, used and redistributed with permission.
 
-- **Reads what you point at** — rest the mouse on something in the game and hear *that one thing*:
-  an inventory item, a merchant row with its own price, a Wizard's Vault card, a bank slot.
-- **Reads the screen and the chat** — anything on screen can be spoken, including whatever the
-  mouse is resting on.
-- **Speaks with a natural voice** — a local neural voice, or through NVDA if that is what you use.
-- **Finds anything you own** — searches your bank, every character's bags and material storage
-  through the official Guild Wars 2 API, and tells you exactly where something is.
+TacO and Blish HUD are separate overlay applications that read compatible packs; they are not the creators of these packs. Thank you to every creator, tester and community member whose feedback helps Echoes improve.
 
-### Explore, chat and play
+## In loving memory of J.W.
 
-- **Guides you around the map** — audio sonar, painted trails, and spoken turn-by-turn directions.
-- **Lets you talk instead of type** — dictate into chat with local speech-to-text.
-- **Plays music** — import songs and play Guild Wars 2 instruments, with a practice guide.
+<picture>
+  <source media="(prefers-reduced-motion: reduce)" srcset="https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/memorial-phoenix.webp">
+  <img src="https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/jw-phoenix-memory.gif" width="420" alt="An ivory and lavender phoenix rising with both wings outstretched inside an ornate gold border, with falling embers.">
+</picture>
 
-### Make the interface yours
+My older brother passed away shortly before Echoes Unseen’s first launch. Through grief, I kept creating—and this project became a way to carry his memory forward while building something for the community.
 
-- **Adapts to how you see** — interface and text size, contrast, colour-vision palettes, motion,
-  glow and focus strength. Set up in one choice, or tuned control by control.
+*A phoenix from the ashes. For him, and for everyone finding their own way to play.*
 
-### Meet the tool wheel
+— Quinn
 
-**The tools on the wheel:** Screen Reader · Heart Quests · Sonar Trails · Chat Reader ·
-Voice to Chat · Music Player · Oracle · Account Search · Trading Post · Build & Gear ·
-Map Completion · Event Timers · Wizard's Vault · Settings. Any of them can be hidden from the ring
-in **Settings → HUD**.
+[View the website memorial with animation controls](https://echoesoftyria.com/echoes-unseen#jw-dedication) · [View still artwork](https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/memorial-phoenix.webp)
 
-**Driving the wheel:**
+## Beta limits and feedback
 
-1. Hold `Alt` and tap the arrow keys to move between tools. The voice names each one.
-2. Press `Alt+Enter` to open the selected tool.
+OCR can misread or miss text, and wrapped chat or whispers may still be incomplete. Trails follow creator data; they do not calculate safe terrain routes. Possible rift sites are not active rifts. The Heart Quests area preview is inside the panel, not a ground-following world boundary. Some music is an excerpt.
 
-It works while the game has focus. The wheel shrinks to just its logo while you play and unfolds
-when you hover it.
+A MumbleLink startup failure was observed in a DEV run of the same source. The public executable worked in Quinn’s test; recovery improvements remain in separate DEV work. If repeated error dialogs occur, close Echoes with **Ctrl+F12** and report what happened.
 
----
+Story Guide and scanner-based rift assistance are **not included in the public 2.0 build**. They remain in development, alongside the planned .NET 10 migration and further communication improvements.
 
-## Vision Accessibility
+[Open an issue](https://github.com/Quinn80/EchoesUnseen/issues) or email **Echoes.Unseen@pm.me**. Review recordings before sharing them: reports may show visible chat and other screen content.
 
-Echoes Unseen 1.6B adds a dedicated **Accessibility** tab in Settings, designed for a broad range
-of visual access needs, including blindness, low vision, colour-vision differences, reduced
-contrast sensitivity, field-of-view limitations, light sensitivity and motion sensitivity.
+## Technical details and privacy
 
-These are interface options, not treatment, and they make no medical claims.
+Native C# / WPF / .NET 8, self-contained Windows x64, with Direct3D 11 trail rendering and MumbleLink position data. OCR, Piper speech and Whisper dictation run locally. Optional cloud speech sends text to the selected provider; API lookups, Wiki searches, pack updates, model downloads and update checks use the network. Keep your API key private.
 
-| Settings group | What you can adjust |
-|---|---|
-| Quick setup | Standard · Low Vision · High Contrast · Color Vision · Eye Comfort · Screen Reader First · Custom |
-| Readability and size | interface scale, text size, bold text, larger controls, stronger borders, tooltip size |
-| Colour and contrast | protanopia / deuteranopia / tritanopia palettes, high contrast, reduce transparency, solid backgrounds behind text, accent colour |
-| Motion and eye comfort | reduce motion, stop pulsing, reduce glow, stop decorative animation, reduce flashing, dim bright effects |
-| Focus and visibility | focus indicator strength, stronger selection marks, simplified interface |
-| Preferred viewing area | where on screen messages are easiest for you to see |
+Executable: **build20261018-1733**, local source checkpoint **50c5384**, **201,075,446 bytes**.
 
-### Start with what you need
+SHA-256: `7D45B98B2B5950CADD8CB23F685886C310271B09BCA30203C250AABD430C27EF`
 
-**Organised by need, not by diagnosis.** There is no glaucoma mode and no macular-degeneration
-mode. Two people with the same diagnosis routinely need opposite things — one wants everything
-larger, the other wants less motion and dimmer highlights — and nobody should have to describe
-their eyes to a settings page to make text bigger. Every choice is phrased as a need: *larger*,
-*higher contrast*, *less motion*, *stronger focus*, *where on the screen*.
+This repository’s current public source snapshot is older than the 2.0 executable. The release tag and automatic source archives do not represent publication of the local 50c5384 development checkpoint. Source synchronization is separate from this binary release; do not expect the current public checkout to build the new executable.
 
-**A profile is a starting point, not a lock.** Change any setting afterwards and it simply becomes
-Custom, keeping your change. You never have to pick one at all.
+See [LICENSE](LICENSE) and [third-party notices](THIRD-PARTY-NOTICES.md). Contributions and reproducible bug reports are welcome. Accessibility features are free; [optional donations](https://echoesoftyria.com/donate) support continued work.
 
-### What these settings change today
-
-**The colour settings change Echoes Unseen's own interface.** Nothing is filtered over Guild Wars 2.
-
-**Preferred viewing area is stored, and nothing reads it yet.** It is groundwork for features still
-to come — the Story Guide, the Music Guide and navigation overlays — and it is listed here as a
-saved preference rather than as something that repositions anything today.
-
-One rule is not a setting and cannot be switched off: **colour is never the only thing that tells
-you something.** Every selected, checked, focused or unavailable state also carries a mark, a word
-or a shape, and a screen reader is told the same thing the screen shows.
-
----
-
-## Hover Reader
-
-Echoes Unseen can read supported Guild Wars 2 interface objects individually, instead of simply
-gathering the text nearest the pointer.
-
-**Point at one thing. Hear that one thing.**
-
-> **OpenCV finds the object → RapidOCR reads the text → Echoes Unseen speaks it.**
-
-| You point at | You hear |
-|---|---|
-| an inventory slot | the item, its tooltip, how many are in the stack |
-| a bank slot in the Account Vault | that item, its tooltip and its stack count — not the bank tab whose row happens to run behind it |
-| a merchant row | that item, its description, its own price |
-| a Wizard's Vault reward | the whole card: name, description, Astral Acclaim price, availability |
-| a Trading Post row | the item and its price in gold, silver and copper |
-| a Gem Store card | the product, its description, its gem price, and any sale price |
-| a dialog choice | that one choice, ending "Dialog option." |
-| a button | "Name. Button." — anywhere on the button, not just its label |
-| an NPC | that NPC's name |
-
-Core Hover Reader processing happens locally on your own PC. OpenCV works out the geometry of the
-interface — where a card, row, tooltip or button begins and ends — and reads no text at all.
-RapidOCR then recognises the text inside that object. RapidOCR is a local neural OCR model: it
-turns pictures of text into text. It is not generative AI, and nothing analyses your gameplay.
-**Windows OCR** remains the local fallback.
-
-This is **Enhanced Hover Targeting**, on by default. **Classic Hover Targeting**, which reads the
-text nearest the pointer, is still one switch away in **Settings → Features**.
-
-It is **beta**. Every change is measured offline against a library of hovers recorded from real
-sessions before it ships, and the current limits are listed in the
-[release notes](https://github.com/Quinn80/EchoesUnseen/releases/latest).
-
----
-
-## Navigation
-
-### A little help finding your next adventure 🧭
-
-- **Sonar Trails** — an audio sonar pings you toward your next waypoint, heart or point of
-  interest, and tells you how far away it is and which way it lies.
-- **Spoken turn-by-turn directions** — a sightless compass for getting somewhere without seeing
-  the map.
-- **Painted trails** — a route drawn on the ground for anyone who can see some of the screen.
-
-### Bring your own marker packs
-
-The Navigator can import trail and marker-pack files you supply yourself.
-**No marker packs ship with Echoes Unseen**, in this or any release.
-
-More trail packs coming soon!
-
----
-
-## Screen Reader / Chat Reader
-
-- **Screen Reader** — `Ctrl+Shift+Space` reads whatever is under the pointer: tooltips, menu
-  buttons, list rows.
-- **Chat Reader** — reads incoming chat aloud, and keeps working with its panel closed.
-- **Plays nicely with NVDA** — route speech through NVDA, and the readers stay quiet unless Guild
-  Wars 2 has focus. Quiet Mode hushes everything with one key.
-
----
-
-## Voice and Speech
-
-- **A natural local voice** — [Piper](https://github.com/rhasspy/piper) speaks on your own
-  computer. 22 English voices to preview and download; six arrive automatically on first run.
-- **Windows voices** are built in, and **ElevenLabs** is optional with your own key.
-- **Voice to Chat** — dictate into chat. The default is the speech recognition built into Windows;
-  Whisper is an optional local alternative. Either way the audio is processed on your PC.
-
----
-
-## Music
-
-- Import songs as number notation, ABC letters, MIDI or AutoHotkey files.
-- Full three-octave instrument range, and auto-play for the Guild Wars 2 instruments.
-- A practice guide that follows along.
-
----
-
-## Privacy and Local Processing
-
-### What stays on your PC
-
-**Core screen-reading and accessibility processing happens locally on your PC.** The Hover Reader,
-the Screen Reader and the Chat Reader capture and recognise text on your own machine with OpenCV,
-RapidOCR and Windows OCR, and Piper speaks it locally. Normal live screen reading does not upload
-your screen anywhere. There is no telemetry and no account.
-
-### What uses the network
-
-Some features do use the network:
-
-- the **official Guild Wars 2 API**, with the key you supply, for account features
-- the **Guild Wars 2 Wiki**, for Oracle searches and the community song library
-- an **update check** against this repository's releases
-- **one-time downloads** of voices and optional models (Piper, Whisper, Tesseract language data)
-- **ElevenLabs**, only if you turn it on with your own key
-- a **bug report**, only when you choose to send one
-
-### You choose whether to send a report
-
-**Bug reports are always your choice.** Pressing the bug-record key (`F9`) saves a short screen
-recording, recent screenshots and logs into your Downloads folder as a zip. The "Send feedback /
-crash report" button in Settings then opens your own mail app addressed to `Echoes.Unseen@pm.me`
-with the report saved ready to attach — you press Send. Reports contain no API keys, account names
-or email addresses, but they do contain pictures of your own screen, which is what makes them
-useful.
-
----
-
-## Download
-
-**[Download the latest release — `EchoesUnseen-1.6B.exe`](https://github.com/Quinn80/EchoesUnseen/releases/latest)**
-
-**Windows 10/11 (64-bit) · About 138 MB · Self-contained — no .NET install needed.**
-
-### Ready when you are
-
-1. Download `EchoesUnseen-1.6B.exe` from the release page above.
-2. Run the downloaded file.
-3. On first run, Echoes Unseen downloads six voices automatically.
-
-> On first launch, Windows SmartScreen may warn "unknown publisher" (it is an unsigned indie
-> build). Click **More info → Run anyway**.
-
-Your settings, voices and songs live in `%APPDATA%\EchoesUnseen` and carry over between releases.
-
----
-
-## No gameplay automation
-
-Echoes Unseen does not play Guild Wars 2 and makes no decisions in it. It has no generative-AI
-chatbot and does no cloud analysis of your game; the local neural models it uses turn pictures into
-text and text into speech. You still move, choose, buy, fight and explore. Music auto-play is an
-optional instrument feature that sends the imported song's instrument key presses; it does not
-control character movement, combat, story progression or dialog choices.
-
----
-
-## Technical Components
-
-What each piece actually does in the app. Full versions and licence texts are in
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
-
-| Component | Version | Its role in Echoes Unseen |
-|---|---|---|
-| [OpenCV](https://opencv.org/) (via [OpenCvSharp](https://github.com/shimat/opencvsharp)) | 4.13.0 | Hover Reader interface-object geometry — where an object begins and ends |
-| [RapidOCR](https://github.com/RapidAI/RapidOCR) (via [RapidOcrNet](https://github.com/BobLd/RapidOcrNet)) | 4.2.0 | local Hover Reader OCR, using the PP-OCRv5 models |
-| [ONNX Runtime](https://onnxruntime.ai/) | 1.29.0 | local model runtime for those OCR models |
-| **Windows.Media.Ocr** | built in | the Hover Reader's local OCR fallback |
-| [Piper](https://github.com/rhasspy/piper) | — | local neural text-to-speech, downloaded on first use |
-| [Tesseract](https://github.com/tesseract-ocr/tesseract) | 5.2.0 | optional OCR engine for the Chat Reader, selectable in Settings |
-| [Whisper.net](https://github.com/sandrohanea/whisper.net) | 1.9.1 | optional local speech-to-text for Voice to Chat; Windows Speech is the default |
-| [NAudio](https://github.com/naudio/NAudio) | 2.2.1 | audio playback, capture, and the sonar and earcon tones |
-| [Clipper2](https://github.com/AngusJohnson/Clipper2) | 2.0.0 | polygon clipping for the trail renderer |
-| [AutoHotkey](https://www.autohotkey.com/) | v2 | a separate process used for music auto-play |
-| **NVDA Controller Client** | — | speaks through NVDA when you ask it to |
-| **Guild Wars 2 API** | — | exact account data for the item finder, the Wizard's Vault and prices |
-| **Community marker-pack format** | — | read for navigation; no packs are bundled |
-
-Built on **.NET 8 / WPF** as a native Windows overlay.
-
-## Building from source
-
-Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download) on Windows.
-
-```bash
-git clone <your-fork-url>
-cd EchoesUnseen
-dotnet build
-dotnet run --project EchoesUnseen
-```
-
-To produce a self-contained single-file release exe (no .NET needed on the target machine):
-
-```powershell
-powershell -ExecutionPolicy Bypass -File publish-beta.ps1 -Version "1.6B"
-```
-
-The end-user build is published with `-p:Distribution=true` (it shows the feedback button).
-
-**One binary is not in this repository:** `EchoesUnseen/Resources/Ahk/AutoHotkey64.exe`, the
-unmodified [AutoHotkey](https://www.autohotkey.com/) v2 64-bit executable that the Music Player runs
-as a separate process for auto-play. AutoHotkey is GPL-2.0, so it is not redistributed here.
-Download it from the AutoHotkey site and place it there before building, or remove the
-embedded-resource line from `EchoesUnseen.csproj` to build without auto-play.
-
-## Known issues
-
-The Hover Reader is beta. The current known limits are listed in full with each release:
-
-- Translucent tooltips over some cards.
-- The occasional misspelling.
-- A pointer exactly on a row boundary.
-- Unusual currencies read as plain figures.
-
-**In the Account Vault:**
-
-- Pointing at the *first* bank tab header reads the empty search box above it as part of the same block.
-- An empty slot is silent rather than announced.
-
-See the [latest release notes](https://github.com/Quinn80/EchoesUnseen/releases/latest)
-for the full list.
-
-## Support and feedback
-
-### Something not reading right? Let’s work it out
-
-**[Echoes.Unseen@pm.me](mailto:Echoes.Unseen@pm.me)** — write any time: a problem, an idea, or something that reads wrongly.
-
-If something is misread, press **F9** first. Echoes Unseen saves a short recording, some
-screenshots and its logs as a zip in your Downloads folder; attaching that says exactly what
-was on screen. Reports contain no API keys, account names or email addresses, but they do
-contain pictures of your own screen, so sending one is always your choice.
-
-## Contributing
-
-### Help make Tyria easier to explore 💜
-
-Feedback and suggestions are welcome — especially from players who use screen readers.
-[Open an issue](https://github.com/Quinn80/EchoesUnseen/issues) and tell us:
-
-- What is confusing by ear.
-- What is misread.
-- What is missing.
-
-Interested in working with the code? Start with [Building from source](#building-from-source).
-
-## Licences / Third-Party Notices
-
-Echoes Unseen is released under the MIT License — see [LICENSE](LICENSE).
-
-Full third-party component list, versions and licence texts:
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
-
-## Not affiliated with ArenaNet
-
-Echoes Unseen is an unofficial accessibility companion for Guild Wars 2. It is not affiliated with,
-endorsed by, sponsored by or approved by ArenaNet or NCSOFT. Guild Wars 2 and its assets are
-© ArenaNet, LLC.
+Echoes Unseen is independent and is not affiliated with or endorsed by ArenaNet or NCSOFT. Guild Wars 2 belongs to its respective owners.
