@@ -8,8 +8,6 @@ A free, unofficial Windows companion for Guild Wars 2, designed especially for p
 
 ![Echoes Unseen’s green launcher menu open over Guild Wars 2 gameplay.](https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/Echoes-Unseen-V2-in-game-burnt.png)
 
-*In-game screenshot provided by Quinn; decorative burnt edges and a soft left-edge fade have been applied.*
-
 ## Start small
 
 1. Download **Echoes.Unseen.exe** from the [2.0 release](https://github.com/Quinn80/EchoesUnseen/releases/tag/2.0). It is one self-contained executable; no separate .NET installation is required.
@@ -36,7 +34,7 @@ The file is unsigned. Windows SmartScreen may warn; verify the official release 
 
 **[Tekkit’s Workshop](https://www.tekkitsworkshop.net/)** creates the All-In-One marker and trail pack, used and redistributed with permission.
 
-TacO and Blish HUD are separate overlay applications that read compatible packs; they are not the creators of these packs. Thank you to every creator, tester and community member whose feedback helps Echoes improve.
+Thank you to every creator, tester and community member whose feedback helps Echoes improve.
 
 ## In loving memory of J.W.
 
@@ -51,7 +49,7 @@ My older brother passed away shortly before Echoes Unseen’s first launch. Thro
 
 — Quinn
 
-[View the website memorial with animation controls](https://echoesoftyria.com/echoes-unseen#jw-dedication) · [View still artwork](https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/memorial-phoenix.webp)
+[View the website memorial](https://echoesoftyria.com/echoes-unseen#jw-dedication) · [View still artwork](https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/memorial-phoenix.webp)
 
 ## Beta limits and feedback
 
