@@ -38,10 +38,12 @@ Thank you to every creator, tester and community member whose feedback helps Ech
 
 ## In loving memory of J.W.
 
+<p align="center">
 <picture>
   <source media="(prefers-reduced-motion: reduce)" srcset="https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/memorial-phoenix.webp">
   <img src="https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/jw-phoenix-memory.gif" width="420" alt="An ivory and lavender phoenix rising with both wings outstretched inside an ornate gold border, with falling embers.">
 </picture>
+</p>
 
 My older brother passed away shortly before Echoes Unseen’s first launch. Through grief, I kept creating—and this project became a way to carry his memory forward while building something for the community.
 
@@ -49,7 +51,7 @@ My older brother passed away shortly before Echoes Unseen’s first launch. Thro
 
 — Quinn
 
-[View the website memorial](https://echoesoftyria.com/echoes-unseen#jw-dedication) · [View still artwork](https://github.com/Quinn80/EchoesUnseen/releases/download/2.0/memorial-phoenix.webp)
+[More about the app here.](https://echoesoftyria.com/echoes-unseen)
 
 ## Beta limits and feedback
 
